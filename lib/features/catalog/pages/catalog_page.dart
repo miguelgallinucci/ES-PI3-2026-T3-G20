@@ -4,6 +4,7 @@ import '../data/mock_startups.dart';
 import '../models/startup_model.dart';
 import '../widgets/startup_card.dart';
 import 'startup_details_page.dart';
+import '../../profile/pages/profile_page.dart';
 
 class CatalogPage extends StatelessWidget {
   const CatalogPage({super.key});
@@ -33,16 +34,40 @@ class CatalogPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 8),
-                    const Text(
-                      'Catálogo de Startups',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        height: 1.2,
-                      ),
+
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Catálogo de Startups',
+                            style: TextStyle(
+                              fontSize: 30,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ProfilePage(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.person_outline_rounded,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                        ),
+                      ],
                     ),
+
                     const SizedBox(height: 10),
+
                     const Text(
                       'Explore startups, acompanhe setores promissores e descubra novas oportunidades.',
                       style: TextStyle(
@@ -51,6 +76,7 @@ class CatalogPage extends StatelessWidget {
                         height: 1.5,
                       ),
                     ),
+
                     const SizedBox(height: 24),
 
                     Container(

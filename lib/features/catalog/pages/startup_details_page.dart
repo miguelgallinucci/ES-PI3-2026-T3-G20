@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../portfolio/pages/portfolio_page.dart';
 
 class StartupDetailsPage extends StatelessWidget {
   final String name;
@@ -50,9 +51,7 @@ class StartupDetailsPage extends StatelessWidget {
                         color: Colors.white,
                       ),
                     ),
-
                     const SizedBox(height: 8),
-
                     Row(
                       children: [
                         Container(
@@ -61,7 +60,7 @@ class StartupDetailsPage extends StatelessWidget {
                             vertical: 7,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.12),
+                            color: AppColors.primary.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -83,9 +82,7 @@ class StartupDetailsPage extends StatelessWidget {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 18),
-
                     Text(
                       name,
                       style: const TextStyle(
@@ -95,9 +92,7 @@ class StartupDetailsPage extends StatelessWidget {
                         height: 1.15,
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     Text(
                       description,
                       style: const TextStyle(
@@ -106,9 +101,7 @@ class StartupDetailsPage extends StatelessWidget {
                         height: 1.6,
                       ),
                     ),
-
                     const SizedBox(height: 26),
-
                     Row(
                       children: [
                         Expanded(
@@ -126,9 +119,7 @@ class StartupDetailsPage extends StatelessWidget {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 24),
-
                     _SectionCard(
                       title: 'Sumário executivo',
                       child: const Text(
@@ -140,9 +131,7 @@ class StartupDetailsPage extends StatelessWidget {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 18),
-
                     _SectionCard(
                       title: 'Estrutura societária',
                       child: const Column(
@@ -167,9 +156,7 @@ class StartupDetailsPage extends StatelessWidget {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 18),
-
                     _SectionCard(
                       title: 'Mentores e conselho',
                       child: const Column(
@@ -186,9 +173,7 @@ class StartupDetailsPage extends StatelessWidget {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 18),
-
                     _SectionCard(
                       title: 'Perguntas públicas',
                       child: const Column(
@@ -208,16 +193,14 @@ class StartupDetailsPage extends StatelessWidget {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 18),
-
                     _SectionCard(
                       title: 'Vídeo demonstrativo',
                       child: Container(
                         height: 170,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.03),
+                          color: Colors.white.withValues(alpha: 0.03),
                           borderRadius: BorderRadius.circular(22),
                           border: Border.all(color: AppColors.border),
                         ),
@@ -243,14 +226,19 @@ class StartupDetailsPage extends StatelessWidget {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 28),
-
                     SizedBox(
                       width: double.infinity,
                       height: 54,
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PortfolioPage(),
+                            ),
+                          );
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
@@ -267,7 +255,6 @@ class StartupDetailsPage extends StatelessWidget {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -294,7 +281,7 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.border),
       ),
@@ -338,7 +325,7 @@ class _SectionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.04),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(28),
         border: Border.all(color: AppColors.border),
       ),
@@ -377,7 +364,7 @@ class _MemberRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -434,7 +421,7 @@ class _QuestionItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
