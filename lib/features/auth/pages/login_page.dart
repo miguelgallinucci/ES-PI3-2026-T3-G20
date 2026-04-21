@@ -4,6 +4,7 @@ import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 import 'forgot_password_page.dart';
 import 'register_page.dart';
+import '../../catalog/pages/catalog_page.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -190,8 +191,16 @@ class LoginPage extends StatelessWidget {
 
                           AppButton(
                             text: 'Entrar',
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const CatalogPage(),
+                                ),
+                              );
+                            },
                           ),
+
                           const SizedBox(height: 18),
 
                           Row(
