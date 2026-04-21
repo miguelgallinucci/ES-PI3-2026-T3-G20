@@ -37,24 +37,30 @@ class DashboardPage extends StatelessWidget {
                         color: Colors.white,
                       ),
                     ),
+
                     const SizedBox(height: 8),
+
                     const Text(
-                      'Dashboard',
+                      'Desempenho da carteira',
                       style: TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
+                        height: 1.2,
                       ),
                     ),
+
                     const SizedBox(height: 10),
+
                     const Text(
-                      'Acompanhe o desempenho da sua carteira e a valorização dos seus investimentos.',
+                      'Acompanhe a evolução dos seus investimentos e a valorização da sua carteira ao longo do tempo.',
                       style: TextStyle(
                         fontSize: 15,
                         color: AppColors.textSecondary,
                         height: 1.5,
                       ),
                     ),
+
                     const SizedBox(height: 22),
 
                     Wrap(
@@ -92,7 +98,7 @@ class DashboardPage extends StatelessWidget {
 
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(18),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.04),
                         borderRadius: BorderRadius.circular(30),
@@ -102,7 +108,7 @@ class DashboardPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Valorização da carteira',
+                            'Evolução do patrimônio',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 22,
@@ -111,7 +117,7 @@ class DashboardPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            '+13,4% no período',
+                            '+13,4% no período mensal',
                             style: TextStyle(
                               color: AppColors.primaryLight,
                               fontSize: 16,
@@ -119,19 +125,24 @@ class DashboardPage extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          SizedBox(
+
+                          const SizedBox(
                             height: 220,
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: const [
-                                _Bar(heightFactor: 0.30, label: 'Jan'),
-                                _Bar(heightFactor: 0.42, label: 'Fev'),
-                                _Bar(heightFactor: 0.38, label: 'Mar'),
-                                _Bar(heightFactor: 0.58, label: 'Abr'),
-                                _Bar(heightFactor: 0.74, label: 'Mai'),
-                                _Bar(heightFactor: 0.88, label: 'Jun'),
-                              ],
-                            ),
+                            child: PortfolioLineChart(),
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _AxisLabel(text: 'Jan'),
+                              _AxisLabel(text: 'Fev'),
+                              _AxisLabel(text: 'Mar'),
+                              _AxisLabel(text: 'Abr'),
+                              _AxisLabel(text: 'Mai'),
+                              _AxisLabel(text: 'Jun'),
+                            ],
                           ),
                         ],
                       ),
@@ -178,6 +189,27 @@ class DashboardPage extends StatelessWidget {
                       ],
                     ),
 
+                    const SizedBox(height: 12),
+
+                    Row(
+                      children: const [
+                        Expanded(
+                          child: _MetricCard(
+                            label: 'Maior alta',
+                            value: '+21,5%',
+                            highlight: true,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: _MetricCard(
+                            label: 'Aporte total',
+                            value: 'R\$ 12.500',
+                          ),
+                        ),
+                      ],
+                    ),
+
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -190,52 +222,103 @@ class DashboardPage extends StatelessWidget {
   }
 }
 
-class _Bar extends StatelessWidget {
-  final double heightFactor;
-  final String label;
-
-  const _Bar({
-    required this.heightFactor,
-    required this.label,
-  });
+class PortfolioLineChart extends StatelessWidget {
+  const PortfolioLineChart({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 5),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Align(
-                alignment: Alignment.bottomCenter,
-                child: Container(
-                  height: 170 * heightFactor,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppColors.primaryLight,
-                        AppColors.primary,
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
+    return CustomPaint(
+      painter: PortfolioLineChartPainter(),
+      child: Container(),
+    );
+  }
+}
+
+class PortfolioLineChartPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final gridPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.06)
+      ..strokeWidth = 1;
+
+    final linePaint = Paint()
+      ..color = AppColors.primaryLight
+      ..strokeWidth = 4
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final fillPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0x5534D399),
+          Color(0x0034D399),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    final pointPaint = Paint()
+      ..color = AppColors.primary
+      ..style = PaintingStyle.fill;
+
+    for (int i = 1; i <= 4; i++) {
+      final y = size.height * i / 5;
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        gridPaint,
+      );
+    }
+
+    final points = [
+      Offset(size.width * 0.04, size.height * 0.78),
+      Offset(size.width * 0.20, size.height * 0.66),
+      Offset(size.width * 0.36, size.height * 0.70),
+      Offset(size.width * 0.52, size.height * 0.52),
+      Offset(size.width * 0.70, size.height * 0.38),
+      Offset(size.width * 0.92, size.height * 0.18),
+    ];
+
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (int i = 1; i < points.length; i++) {
+      path.lineTo(points[i].dx, points[i].dy);
+    }
+
+    final fillPath = Path.from(path)
+      ..lineTo(points.last.dx, size.height)
+      ..lineTo(points.first.dx, size.height)
+      ..close();
+
+    canvas.drawPath(fillPath, fillPaint);
+    canvas.drawPath(path, linePaint);
+
+    for (final point in points) {
+      canvas.drawCircle(point, 5, pointPaint);
+      canvas.drawCircle(
+        point,
+        9,
+        Paint()..color = AppColors.primary.withValues(alpha: 0.18),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _AxisLabel extends StatelessWidget {
+  final String text;
+
+  const _AxisLabel({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: AppColors.textSecondary,
+        fontSize: 12,
       ),
     );
   }
