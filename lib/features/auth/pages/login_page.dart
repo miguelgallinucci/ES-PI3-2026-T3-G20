@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
+import 'forgot_password_page.dart';
+import 'register_page.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -145,7 +147,6 @@ class LoginPage extends StatelessWidget {
                               ),
                             ),
                           ),
-
                           const SizedBox(height: 24),
 
                           const AppInput(
@@ -159,44 +160,62 @@ class LoginPage extends StatelessWidget {
                             hint: '••••••••',
                             obscureText: true,
                           ),
-
                           const SizedBox(height: 12),
 
-                          const Align(
+                          Align(
                             alignment: Alignment.centerRight,
                             child: Padding(
-                              padding: EdgeInsets.only(right: 6),
-                              child: Text(
-                                'Esqueceu a senha?',
-                                style: TextStyle(
-                                  color: AppColors.primaryLight,
-                                  fontWeight: FontWeight.w500,
+                              padding: const EdgeInsets.only(right: 6),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                      const ForgotPasswordPage(),
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  'Esqueceu a senha?',
+                                  style: TextStyle(
+                                    color: AppColors.primaryLight,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-
                           const SizedBox(height: 24),
 
                           AppButton(
                             text: 'Entrar',
                             onPressed: () {},
                           ),
-
                           const SizedBox(height: 18),
 
-                          const Row(
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
+                              const Text(
                                 'Não tem conta? ',
                                 style: TextStyle(color: Colors.white),
                               ),
-                              Text(
-                                'Cadastre-se',
-                                style: TextStyle(
-                                  color: AppColors.primaryLight,
-                                  fontWeight: FontWeight.bold,
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const RegisterPage(),
+                                    ),
+                                  );
+                                },
+                                child: const Text(
+                                  'Cadastre-se',
+                                  style: TextStyle(
+                                    color: AppColors.primaryLight,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],
