@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../portfolio/pages/portfolio_page.dart';
+import 'investment_page.dart';
 
 class StartupDetailsPage extends StatelessWidget {
   final String name;
@@ -235,7 +235,12 @@ class StartupDetailsPage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const PortfolioPage(),
+                              builder: (_) => InvestmentPage(
+                                startupName: name,
+                                sector: sector,
+                                tokenPrice: 'R\$ 12,50',
+                                availableBalance: 'R\$ 5.000,00',
+                              ),
                             ),
                           );
                         },
