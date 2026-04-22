@@ -35,7 +35,6 @@ class LoginPage extends StatelessWidget {
                   children: [
                     const SizedBox(height: 8),
 
-                    // TOPO VISUAL
                     SizedBox(
                       height: 210,
                       child: Stack(
@@ -123,7 +122,6 @@ class LoginPage extends StatelessWidget {
 
                     const SizedBox(height: 32),
 
-                    // BLOCO DE LOGIN
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
@@ -172,8 +170,7 @@ class LoginPage extends StatelessWidget {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                      const ForgotPasswordPage(),
+                                      builder: (_) => const ForgotPasswordPage(),
                                     ),
                                   );
                                 },
@@ -192,7 +189,7 @@ class LoginPage extends StatelessWidget {
                           AppButton(
                             text: 'Entrar',
                             onPressed: () {
-                              Navigator.push(
+                              Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) => const CatalogPage(),

@@ -1,4 +1,3 @@
-//pagina "investir nessa startup"
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import 'catalog_page.dart';
@@ -25,14 +24,15 @@ class InvestmentPage extends StatefulWidget {
 class _InvestmentPageState extends State<InvestmentPage> {
   final TextEditingController quantityController = TextEditingController();
 
-  double get tokenPriceValue => double.tryParse(
-    widget.tokenPrice
-        .replaceAll('R\$', '')
-        .replaceAll(' ', '')
-        .replaceAll('.', '')
-        .replaceAll(',', '.'),
-  ) ??
-      0;
+  double get tokenPriceValue =>
+      double.tryParse(
+        widget.tokenPrice
+            .replaceAll('R\$', '')
+            .replaceAll(' ', '')
+            .replaceAll('.', '')
+            .replaceAll(',', '.'),
+      ) ??
+          0;
 
   int get quantity => int.tryParse(quantityController.text) ?? 0;
 
@@ -113,8 +113,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
                                   vertical: 7,
                                 ),
                                 decoration: BoxDecoration(
-                                  color:
-                                  AppColors.primary.withValues(alpha: 0.12),
+                                  color: AppColors.primary.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -279,11 +278,43 @@ class _InvestmentPageState extends State<InvestmentPage> {
     return 'R\$ $fixed';
   }
 
-  void _showSuccessDialog(BuildContext context) {
+  void _goToCatalog(BuildContext pageContext, BuildContext dialogContext) {
+    Navigator.of(dialogContext).pop();
+
+    Navigator.of(pageContext).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const CatalogPage(),
+      ),
+          (route) => false,
+    );
+  }
+
+  void _goToPortfolio(BuildContext pageContext, BuildContext dialogContext) {
+    Navigator.of(dialogContext).pop();
+
+    final navigator = Navigator.of(pageContext);
+
+    navigator.pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const CatalogPage(),
+      ),
+          (route) => false,
+    );
+
+    Future.microtask(() {
+      navigator.push(
+        MaterialPageRoute(
+          builder: (_) => const PortfolioPage(),
+        ),
+      );
+    });
+  }
+
+  void _showSuccessDialog(BuildContext pageContext) {
     showDialog(
-      context: context,
+      context: pageContext,
       barrierDismissible: false,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF102235),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
@@ -301,24 +332,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
         ),
         actions: [
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (_) => const CatalogPage(),
-                ),
-                    (route) => false,
-              );
-
-              Future.microtask(() {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const PortfolioPage(),
-                  ),
-                );
-              });
-            },
+            onPressed: () => _goToPortfolio(pageContext, dialogContext),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white.withValues(alpha: 0.08),
               foregroundColor: Colors.white,
@@ -326,15 +340,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
             child: const Text('Ver carteira'),
           ),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (_) => const CatalogPage(),
-                ),
-                    (route) => false,
-              );
-            },
+            onPressed: () => _goToCatalog(pageContext, dialogContext),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,

@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../auth/pages/login_page.dart';
 import '../../dashboard/pages/dashboard_page.dart';
 import '../../portfolio/pages/portfolio_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
+
+  void _logout(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const LoginPage(),
+      ),
+          (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +48,6 @@ class ProfilePage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-
                     const Center(
                       child: CircleAvatar(
                         radius: 38,
@@ -50,9 +59,7 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 18),
-
                     const Center(
                       child: Text(
                         'Alycia Bond',
@@ -63,9 +70,7 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 6),
-
                     const Center(
                       child: Text(
                         'alycia@email.com',
@@ -75,9 +80,7 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 28),
-
                     _ActionCard(
                       icon: Icons.account_balance_wallet_rounded,
                       title: 'Minha carteira',
@@ -91,7 +94,6 @@ class ProfilePage extends StatelessWidget {
                         );
                       },
                     ),
-
                     _ActionCard(
                       icon: Icons.bar_chart_rounded,
                       title: 'Dashboard',
@@ -105,23 +107,18 @@ class ProfilePage extends StatelessWidget {
                         );
                       },
                     ),
-
                     _ActionCard(
                       icon: Icons.security_rounded,
                       title: 'Segurança',
                       subtitle: 'Configurações de acesso e proteção da conta.',
                       onTap: () {},
                     ),
-
                     _ActionCard(
                       icon: Icons.logout_rounded,
                       title: 'Sair',
                       subtitle: 'Encerrar sessão no aplicativo.',
-                      onTap: () {
-                        Navigator.popUntil(context, (route) => route.isFirst);
-                      },
+                      onTap: () => _logout(context),
                     ),
-
                     const SizedBox(height: 24),
                   ],
                 ),
