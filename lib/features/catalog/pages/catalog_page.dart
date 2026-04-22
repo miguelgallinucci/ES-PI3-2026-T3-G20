@@ -5,6 +5,7 @@ import '../models/startup_model.dart';
 import '../widgets/startup_card.dart';
 import 'startup_details_page.dart';
 import '../../profile/pages/profile_page.dart';
+import 'market_page.dart';
 
 class CatalogPage extends StatelessWidget {
   const CatalogPage({super.key});
@@ -46,6 +47,21 @@ class CatalogPage extends StatelessWidget {
                               color: Colors.white,
                               height: 1.2,
                             ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const MarketPage(),
+                              ),
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.show_chart_rounded,
+                            color: Colors.white,
+                            size: 28,
                           ),
                         ),
                         IconButton(

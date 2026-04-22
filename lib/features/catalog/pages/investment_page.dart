@@ -1,6 +1,7 @@
 //pagina "investir nessa startup"
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import 'catalog_page.dart';
 import '../../portfolio/pages/portfolio_page.dart';
 
 class InvestmentPage extends StatefulWidget {
@@ -75,7 +76,6 @@ class _InvestmentPageState extends State<InvestmentPage> {
                       ),
                     ),
                     const SizedBox(height: 8),
-
                     Text(
                       'Investir em ${widget.startupName}',
                       style: const TextStyle(
@@ -85,9 +85,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
                         height: 1.2,
                       ),
                     ),
-
                     const SizedBox(height: 10),
-
                     const Text(
                       'Defina a quantidade de tokens e revise os dados da operação antes de confirmar.',
                       style: TextStyle(
@@ -96,9 +94,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
                         height: 1.5,
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
                     Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
@@ -117,7 +113,8 @@ class _InvestmentPageState extends State<InvestmentPage> {
                                   vertical: 7,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  color:
+                                  AppColors.primary.withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -132,7 +129,6 @@ class _InvestmentPageState extends State<InvestmentPage> {
                             ],
                           ),
                           const SizedBox(height: 18),
-
                           Row(
                             children: [
                               Expanded(
@@ -150,9 +146,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
                               ),
                             ],
                           ),
-
                           const SizedBox(height: 20),
-
                           const Text(
                             'Quantidade de tokens',
                             style: TextStyle(
@@ -162,7 +156,6 @@ class _InvestmentPageState extends State<InvestmentPage> {
                             ),
                           ),
                           const SizedBox(height: 10),
-
                           TextField(
                             controller: quantityController,
                             keyboardType: TextInputType.number,
@@ -199,9 +192,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
                             ),
                             style: const TextStyle(color: Colors.white),
                           ),
-
                           const SizedBox(height: 24),
-
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
@@ -241,9 +232,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
                               ],
                             ),
                           ),
-
                           const SizedBox(height: 24),
-
                           SizedBox(
                             width: double.infinity,
                             height: 54,
@@ -274,7 +263,6 @@ class _InvestmentPageState extends State<InvestmentPage> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -294,6 +282,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
   void _showSuccessDialog(BuildContext context) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF102235),
         shape: RoundedRectangleBorder(
@@ -311,28 +300,46 @@ class _InvestmentPageState extends State<InvestmentPage> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Fechar',
-              style: TextStyle(color: AppColors.textSecondary),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (_) => const CatalogPage(),
+                ),
+                    (route) => false,
+              );
+
+              Future.microtask(() {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const PortfolioPage(),
+                  ),
+                );
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
+              foregroundColor: Colors.white,
             ),
+            child: const Text('Ver carteira'),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
+              Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
-                  builder: (_) => const PortfolioPage(),
+                  builder: (_) => const CatalogPage(),
                 ),
+                    (route) => false,
               );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Ver carteira'),
+            child: const Text('Voltar ao catálogo'),
           ),
         ],
       ),
