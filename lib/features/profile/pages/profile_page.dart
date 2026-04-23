@@ -1,3 +1,4 @@
+//aba perfil (minha carteira, dashboard e etc)
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/pages/login_page.dart';
@@ -115,7 +116,7 @@ class ProfilePage extends StatelessWidget {
                     ),
                     _ActionCard(
                       icon: Icons.logout_rounded,
-                      title: 'Sair',
+                      title: 'Sair da conta',
                       subtitle: 'Encerrar sessão no aplicativo.',
                       onTap: () => _logout(context),
                     ),
