@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../widgets/app_button.dart';
@@ -26,81 +27,118 @@ class LoginPage extends StatelessWidget {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 430),
               child: Center(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
 
                     SizedBox(
-                      height: 210,
+                      height: 300,
                       child: Stack(
-                        alignment: Alignment.center,
                         children: [
-                          Positioned(
-                            top: 12,
-                            left: 10,
-                            right: 10,
+                          Positioned.fill(
                             child: Opacity(
-                              opacity: 0.18,
-                              child: SizedBox(
-                                height: 90,
-                                child: CustomPaint(
-                                  painter: GrowthLinePainter(),
-                                ),
+                              opacity: 0.25,
+                              child: CustomPaint(
+                                painter: PremiumChartPainter(),
                               ),
                             ),
                           ),
+
                           Positioned(
-                            top: 36,
-                            child: Container(
-                              width: 86,
-                              height: 86,
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    AppColors.primaryLight,
-                                    AppColors.primary,
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(26),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.20),
-                                    blurRadius: 24,
-                                    offset: const Offset(0, 10),
-                                  ),
-                                ],
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'MI',
-                                  style: TextStyle(
-                                    fontSize: 30,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const Positioned(
-                            bottom: 36,
                             left: 0,
                             right: 0,
+                            bottom: 0,
+                            child: Container(
+                              height: 130,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.transparent,
+                                    const Color(0xFF071A2B)
+                                        .withValues(alpha: 0.92),
+                                    const Color(0xFF071A2B),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          Positioned(
+                            top: 85,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(28),
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(
+                                    sigmaX: 10,
+                                    sigmaY: 10,
+                                  ),
+                                  child: Container(
+                                    width: 92,
+                                    height: 92,
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                        colors: [
+                                          AppColors.primaryLight,
+                                          AppColors.primary,
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(28),
+                                      border: Border.all(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.14,
+                                        ),
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.25,
+                                          ),
+                                          blurRadius: 28,
+                                          offset: const Offset(0, 12),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Center(
+                                      child: Text(
+                                        'MI',
+                                        style: TextStyle(
+                                          fontSize: 34,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          const Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 18,
                             child: Text(
-                              'Bem-vindo ao seu futuro',
+                              'Bem-vindo ao seu\nfuturo',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 34,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
-                                height: 1.15,
+                                height: 1.00,
                               ),
                             ),
                           ),
@@ -120,7 +158,7 @@ class LoginPage extends StatelessWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 28),
 
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -128,7 +166,7 @@ class LoginPage extends StatelessWidget {
                         vertical: 14,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.03),
+                        color: Colors.white.withValues(alpha: 0.03),
                         borderRadius: BorderRadius.circular(32),
                       ),
                       child: Column(
@@ -170,7 +208,8 @@ class LoginPage extends StatelessWidget {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => const ForgotPasswordPage(),
+                                      builder: (_) =>
+                                      const ForgotPasswordPage(),
                                     ),
                                   );
                                 },
@@ -242,39 +281,171 @@ class LoginPage extends StatelessWidget {
   }
 }
 
-class GrowthLinePainter extends CustomPainter {
+class PremiumChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final linePaint = Paint()
-      ..color = AppColors.primaryLight
-      ..strokeWidth = 4
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
+    final gridPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.025)
+      ..strokeWidth = 1;
 
-    final pointPaint = Paint()
-      ..color = AppColors.primary
-      ..style = PaintingStyle.fill;
+    for (int i = 1; i <= 4; i++) {
+      final y = size.height * (i / 5);
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        gridPaint,
+      );
+    }
 
-    final path = Path();
-    path.moveTo(size.width * 0.08, size.height * 0.72);
-    path.lineTo(size.width * 0.28, size.height * 0.60);
-    path.lineTo(size.width * 0.46, size.height * 0.68);
-    path.lineTo(size.width * 0.66, size.height * 0.42);
-    path.lineTo(size.width * 0.88, size.height * 0.18);
+    for (int i = 1; i <= 5; i++) {
+      final x = size.width * (i / 6);
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        gridPaint,
+      );
+    }
 
-    canvas.drawPath(path, linePaint);
-
-    final points = [
-      Offset(size.width * 0.08, size.height * 0.72),
-      Offset(size.width * 0.28, size.height * 0.60),
-      Offset(size.width * 0.46, size.height * 0.68),
-      Offset(size.width * 0.66, size.height * 0.42),
-      Offset(size.width * 0.88, size.height * 0.18),
+    final blueLinePoints = [
+      Offset(size.width * 0.00, size.height * 0.62),
+      Offset(size.width * 0.18, size.height * 0.38),
+      Offset(size.width * 0.34, size.height * 0.56),
+      Offset(size.width * 0.52, size.height * 0.30),
+      Offset(size.width * 0.78, size.height * 0.46),
+      Offset(size.width * 0.96, size.height * 0.12),
     ];
 
-    for (final point in points) {
-      canvas.drawCircle(point, 4, pointPaint);
+    final pinkLinePoints = [
+      Offset(size.width * 0.00, size.height * 0.72),
+      Offset(size.width * 0.16, size.height * 0.82),
+      Offset(size.width * 0.30, size.height * 0.50),
+      Offset(size.width * 0.48, size.height * 0.72),
+      Offset(size.width * 0.66, size.height * 0.28),
+      Offset(size.width * 0.94, size.height * 0.52),
+    ];
+
+    Path buildLinePath(List<Offset> points) {
+      final path = Path()..moveTo(points.first.dx, points.first.dy);
+
+      for (int i = 1; i < points.length; i++) {
+        path.lineTo(points[i].dx, points[i].dy);
+      }
+
+      return path;
     }
+
+    final bluePath = buildLinePath(blueLinePoints);
+    final pinkPath = buildLinePath(pinkLinePoints);
+
+    final blueGlowPaint = Paint()
+      ..color = const Color(0xFF3BA7FF).withValues(alpha: 0.16)
+      ..strokeWidth = 10
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+
+    final pinkGlowPaint = Paint()
+      ..color = AppColors.primaryLight.withValues(alpha: 0.14)
+      ..strokeWidth = 10
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+
+    final blueLinePaint = Paint()
+      ..color = const Color(0xFF3BA7FF).withValues(alpha: 0.95)
+      ..strokeWidth = 4.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final pinkLinePaint = Paint()
+      ..shader = const LinearGradient(
+        colors: [
+          AppColors.primaryLight,
+          AppColors.primary,
+        ],
+      ).createShader(
+        Rect.fromLTWH(0, 0, size.width, size.height),
+      )
+      ..strokeWidth = 4.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    canvas.drawPath(bluePath, blueGlowPaint);
+    canvas.drawPath(pinkPath, pinkGlowPaint);
+
+    canvas.drawPath(bluePath, blueLinePaint);
+    canvas.drawPath(pinkPath, pinkLinePaint);
+
+    final blueDotPaint = Paint()
+      ..color = const Color(0xFF3BA7FF)
+      ..style = PaintingStyle.fill;
+
+    final pinkDotPaint = Paint()
+      ..color = AppColors.primaryLight
+      ..style = PaintingStyle.fill;
+
+    for (final point in blueLinePoints) {
+      canvas.drawCircle(
+        point,
+        7,
+        Paint()
+          ..color = const Color(0xFF3BA7FF).withValues(alpha: 0.15)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+      );
+      canvas.drawCircle(point, 4.2, blueDotPaint);
+      canvas.drawCircle(
+        point,
+        1.6,
+        Paint()..color = Colors.white.withValues(alpha: 0.85),
+      );
+    }
+
+    for (final point in pinkLinePoints) {
+      canvas.drawCircle(
+        point,
+        7,
+        Paint()
+          ..color = AppColors.primaryLight.withValues(alpha: 0.14)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+      );
+      canvas.drawCircle(point, 4.2, pinkDotPaint);
+      canvas.drawCircle(
+        point,
+        1.6,
+        Paint()..color = Colors.white.withValues(alpha: 0.85),
+      );
+    }
+
+    final fadePaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Colors.transparent,
+          const Color(0xFF071A2B).withValues(alpha: 0.92),
+        ],
+      ).createShader(
+        Rect.fromLTWH(
+          0,
+          size.height * 0.55,
+          size.width,
+          size.height * 0.45,
+        ),
+      );
+
+    canvas.drawRect(
+      Rect.fromLTWH(
+        0,
+        size.height * 0.55,
+        size.width,
+        size.height * 0.45,
+      ),
+      fadePaint,
+    );
   }
 
   @override
