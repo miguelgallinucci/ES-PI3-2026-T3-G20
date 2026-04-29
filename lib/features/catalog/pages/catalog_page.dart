@@ -1,8 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/mock_startups.dart';
 import '../models/startup_model.dart';
-import '../widgets/startup_card.dart';
 import 'startup_details_page.dart';
 import '../../profile/pages/profile_page.dart';
 
@@ -16,6 +17,9 @@ class CatalogPage extends StatefulWidget {
 class _CatalogPageState extends State<CatalogPage> {
   bool showMarket = false;
   bool isBuySelected = true;
+  bool showGuidance = false;
+
+  Timer? _guidanceTimer;
 
   final List<_AvailableOffer> availableOffers = const [
     _AvailableOffer(
@@ -78,9 +82,62 @@ class _CatalogPageState extends State<CatalogPage> {
   double get estimatedWalletValue {
     return userPositions.fold(
       0,
-          (sum, position) =>
-      sum + (position.tokensOwned * position.currentPrice),
+          (sum, position) => sum + (position.tokensOwned * position.currentPrice),
     );
+  }
+
+  @override
+  void dispose() {
+    _guidanceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _selectStartups() {
+    setState(() {
+      showMarket = false;
+    });
+
+    _showTemporaryGuidance();
+  }
+
+  void _selectMarket() {
+    setState(() {
+      showMarket = true;
+    });
+
+    _showTemporaryGuidance();
+  }
+
+  void _showTemporaryGuidance() {
+    _guidanceTimer?.cancel();
+
+    setState(() {
+      showGuidance = true;
+    });
+
+    _guidanceTimer = Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+
+      setState(() {
+        showGuidance = false;
+      });
+    });
+  }
+
+  String get _guidanceTitle {
+    return showMarket ? 'Balcão de negociações' : 'Investir em uma startup';
+  }
+
+  String get _guidanceDescription {
+    return showMarket
+        ? 'Compre tokens disponíveis ou crie uma oferta de venda usando os tokens que você já possui.'
+        : 'Toque em uma startup para ver detalhes, perguntas públicas e opção de investimento.';
+  }
+
+  IconData get _guidanceIcon {
+    return showMarket
+        ? Icons.swap_horiz_rounded
+        : Icons.rocket_launch_rounded;
   }
 
   @override
@@ -155,16 +212,34 @@ class _CatalogPageState extends State<CatalogPage> {
                     const SizedBox(height: 22),
                     _MainNavigationSelector(
                       showMarket: showMarket,
-                      onSelectStartups: () {
-                        setState(() {
-                          showMarket = false;
-                        });
-                      },
-                      onSelectMarket: () {
-                        setState(() {
-                          showMarket = true;
-                        });
-                      },
+                      onSelectStartups: _selectStartups,
+                      onSelectMarket: _selectMarket,
+                    ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 260),
+                      curve: Curves.easeOut,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 220),
+                        child: showGuidance
+                            ? Padding(
+                          key: ValueKey('guidance-$showMarket'),
+                          padding: const EdgeInsets.only(top: 18),
+                          child: _GuidanceBox(
+                            icon: _guidanceIcon,
+                            title: _guidanceTitle,
+                            description: _guidanceDescription,
+                            onClose: () {
+                              _guidanceTimer?.cancel();
+                              setState(() {
+                                showGuidance = false;
+                              });
+                            },
+                          ),
+                        )
+                            : const SizedBox.shrink(
+                          key: ValueKey('empty-guidance'),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 22),
                     AnimatedSwitcher(
@@ -189,13 +264,6 @@ class _CatalogPageState extends State<CatalogPage> {
       key: const ValueKey('startup-content'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _GuidanceBox(
-          icon: Icons.rocket_launch_rounded,
-          title: 'Investir em uma startup',
-          description:
-          'Toque em uma startup para ver detalhes, documentos e a opção de investimento.',
-        ),
-        const SizedBox(height: 18),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -240,6 +308,7 @@ class _CatalogPageState extends State<CatalogPage> {
                     ),
                   ),
                 ),
+                style: const TextStyle(color: Colors.white),
               ),
               const SizedBox(height: 14),
               const Row(
@@ -267,7 +336,7 @@ class _CatalogPageState extends State<CatalogPage> {
         ),
         const SizedBox(height: 14),
         ...mockStartups.map(
-              (startup) => StartupCard(
+              (startup) => _StartupCatalogCard(
             name: startup.name,
             sector: startup.sector,
             stage: startup.stage,
@@ -286,13 +355,6 @@ class _CatalogPageState extends State<CatalogPage> {
       key: const ValueKey('market-content'),
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _GuidanceBox(
-          icon: Icons.swap_horiz_rounded,
-          title: 'Balcão de negociações',
-          description:
-          'As operações são simuladas. Na compra, escolha uma oferta disponível. Na venda, crie uma oferta usando seus tokens.',
-        ),
-        const SizedBox(height: 18),
         Row(
           children: [
             Expanded(
@@ -917,6 +979,271 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 }
 
+class _StartupCatalogCard extends StatelessWidget {
+  final String name;
+  final String sector;
+  final String stage;
+  final String description;
+  final String capital;
+  final String tokens;
+  final VoidCallback onTap;
+
+  const _StartupCatalogCard({
+    required this.name,
+    required this.sector,
+    required this.stage,
+    required this.description,
+    required this.capital,
+    required this.tokens,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.035),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _SectorBadge(text: sector),
+              const Spacer(),
+              Flexible(
+                child: Text(
+                  stage,
+                  textAlign: TextAlign.right,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 22),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _StartupLogo(name: name),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    height: 1.15,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            description,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 15,
+              height: 1.45,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _StartupMetricBox(
+                  label: 'Capital',
+                  value: capital,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StartupMetricBox(
+                  label: 'Tokens',
+                  value: tokens,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              onPressed: onTap,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(22),
+                ),
+              ),
+              child: const Text(
+                'Ver mais',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StartupLogo extends StatelessWidget {
+  final String name;
+
+  const _StartupLogo({required this.name});
+
+  String get initials {
+    final words = name
+        .trim()
+        .split(' ')
+        .where((word) => word.trim().isNotEmpty)
+        .toList();
+
+    if (words.isEmpty) return 'ST';
+
+    if (words.length == 1) {
+      return words.first.substring(0, 1).toUpperCase();
+    }
+
+    return '${words[0][0]}${words[1][0]}'.toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 58,
+      height: 58,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.95),
+            AppColors.primaryLight.withValues(alpha: 0.60),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.24),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectorBadge extends StatelessWidget {
+  final String text;
+
+  const _SectorBadge({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 180),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Text(
+        text,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: AppColors.primaryLight,
+          fontSize: 13,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+}
+
+class _StartupMetricBox extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StartupMetricBox({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 88,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.035),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.04),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            value,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AvailableOffer {
   final String startup;
   final String sector;
@@ -1122,11 +1449,13 @@ class _GuidanceBox extends StatelessWidget {
   final IconData icon;
   final String title;
   final String description;
+  final VoidCallback onClose;
 
   const _GuidanceBox({
     required this.icon,
     required this.title,
     required this.description,
+    required this.onClose,
   });
 
   @override
@@ -1182,6 +1511,15 @@ class _GuidanceBox extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: onClose,
+            child: const Icon(
+              Icons.close_rounded,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+          ),
         ],
       ),
     );
@@ -1208,6 +1546,7 @@ class _FilterChipBox extends StatelessWidget {
           Expanded(
             child: Text(
               text,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,
@@ -1311,6 +1650,7 @@ class _MarketInfoCard extends StatelessWidget {
         children: [
           Text(
             label,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.textSecondary,
               fontSize: 12,
@@ -1319,6 +1659,7 @@ class _MarketInfoCard extends StatelessWidget {
           const SizedBox(height: 7),
           Text(
             value,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
@@ -1360,22 +1701,7 @@ class _AvailableOfferCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.30),
-                  ),
-                ),
-                child: const Icon(
-                  Icons.token_rounded,
-                  color: AppColors.primaryLight,
-                  size: 21,
-                ),
-              ),
+              _StartupLogo(name: offer.startup),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1493,6 +1819,7 @@ class _UserTokenCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final estimatedValue = position.tokensOwned * position.currentPrice;
+    final isPositive = !position.variation.startsWith('-');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -1507,22 +1834,7 @@ class _UserTokenCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.30),
-                  ),
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet_rounded,
-                  color: AppColors.primaryLight,
-                  size: 21,
-                ),
-              ),
+              _StartupLogo(name: position.startup),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1549,8 +1861,10 @@ class _UserTokenCard extends StatelessWidget {
               ),
               Text(
                 position.variation,
-                style: const TextStyle(
-                  color: AppColors.primaryLight,
+                style: TextStyle(
+                  color: isPositive
+                      ? AppColors.primaryLight
+                      : AppColors.textSecondary,
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
                 ),
