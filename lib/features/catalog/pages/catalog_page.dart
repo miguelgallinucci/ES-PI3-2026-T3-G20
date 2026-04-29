@@ -16,25 +16,72 @@ class CatalogPage extends StatefulWidget {
 class _CatalogPageState extends State<CatalogPage> {
   bool showMarket = false;
   bool isBuySelected = true;
-  String selectedStartup = 'VisionAI Health';
 
-  final TextEditingController quantityController = TextEditingController();
-  final TextEditingController priceController =
-  TextEditingController(text: '12,50');
+  final List<_AvailableOffer> availableOffers = const [
+    _AvailableOffer(
+      startup: 'VisionAI Health',
+      sector: 'Saúde e IA',
+      stage: 'Em expansão',
+      quantity: 42,
+      unitPrice: 12.50,
+      variation: '+6,2%',
+    ),
+    _AvailableOffer(
+      startup: 'GreenVolt Hub',
+      sector: 'Energia limpa',
+      stage: 'Em operação',
+      quantity: 80,
+      unitPrice: 9.80,
+      variation: '+3,4%',
+    ),
+    _AvailableOffer(
+      startup: 'AgroLink Data',
+      sector: 'Agrotech',
+      stage: 'Nova',
+      quantity: 35,
+      unitPrice: 7.10,
+      variation: '-1,2%',
+    ),
+  ];
 
-  @override
-  void dispose() {
-    quantityController.dispose();
-    priceController.dispose();
-    super.dispose();
+  final List<_UserTokenPosition> userPositions = const [
+    _UserTokenPosition(
+      startup: 'VisionAI Health',
+      sector: 'Saúde e IA',
+      tokensOwned: 20,
+      currentPrice: 12.50,
+      variation: '+6,2%',
+    ),
+    _UserTokenPosition(
+      startup: 'GreenVolt Hub',
+      sector: 'Energia limpa',
+      tokensOwned: 14,
+      currentPrice: 9.80,
+      variation: '+3,4%',
+    ),
+    _UserTokenPosition(
+      startup: 'AgroLink Data',
+      sector: 'Agrotech',
+      tokensOwned: 8,
+      currentPrice: 7.10,
+      variation: '-1,2%',
+    ),
+  ];
+
+  int get totalTokensInWallet {
+    return userPositions.fold(
+      0,
+          (sum, position) => sum + position.tokensOwned,
+    );
   }
 
-  int get quantity => int.tryParse(quantityController.text) ?? 0;
-
-  double get unitPrice =>
-      double.tryParse(priceController.text.replaceAll(',', '.')) ?? 0;
-
-  double get total => quantity * unitPrice;
+  double get estimatedWalletValue {
+    return userPositions.fold(
+      0,
+          (sum, position) =>
+      sum + (position.tokensOwned * position.currentPrice),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +108,6 @@ class _CatalogPageState extends State<CatalogPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 8),
-
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -95,12 +141,10 @@ class _CatalogPageState extends State<CatalogPage> {
                         ),
                       ],
                     ),
-
                     const SizedBox(height: 10),
-
                     Text(
                       showMarket
-                          ? 'Negocie tokens simulados de startups em compra ou venda.'
+                          ? 'Compre tokens disponíveis ou crie uma oferta de venda com seus tokens.'
                           : 'Conheça startups disponíveis e escolha onde deseja investir.',
                       style: const TextStyle(
                         fontSize: 15,
@@ -108,9 +152,7 @@ class _CatalogPageState extends State<CatalogPage> {
                         height: 1.45,
                       ),
                     ),
-
                     const SizedBox(height: 22),
-
                     _MainNavigationSelector(
                       showMarket: showMarket,
                       onSelectStartups: () {
@@ -124,16 +166,13 @@ class _CatalogPageState extends State<CatalogPage> {
                         });
                       },
                     ),
-
                     const SizedBox(height: 22),
-
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 250),
                       child: showMarket
                           ? _buildMarketContent()
                           : _buildStartupCatalogContent(),
                     ),
-
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -156,9 +195,7 @@ class _CatalogPageState extends State<CatalogPage> {
           description:
           'Toque em uma startup para ver detalhes, documentos e a opção de investimento.',
         ),
-
         const SizedBox(height: 18),
-
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -219,9 +256,7 @@ class _CatalogPageState extends State<CatalogPage> {
             ],
           ),
         ),
-
         const SizedBox(height: 24),
-
         const Text(
           'Startups disponíveis',
           style: TextStyle(
@@ -230,9 +265,7 @@ class _CatalogPageState extends State<CatalogPage> {
             fontWeight: FontWeight.w800,
           ),
         ),
-
         const SizedBox(height: 14),
-
         ...mockStartups.map(
               (startup) => StartupCard(
             name: startup.name,
@@ -257,11 +290,9 @@ class _CatalogPageState extends State<CatalogPage> {
           icon: Icons.swap_horiz_rounded,
           title: 'Balcão de negociações',
           description:
-          'Aqui você registra ofertas simuladas para comprar ou vender tokens.',
+          'As operações são simuladas. Na compra, escolha uma oferta disponível. Na venda, crie uma oferta usando seus tokens.',
         ),
-
         const SizedBox(height: 18),
-
         Row(
           children: [
             Expanded(
@@ -291,215 +322,109 @@ class _CatalogPageState extends State<CatalogPage> {
             ),
           ],
         ),
+        const SizedBox(height: 18),
+        isBuySelected ? _buildBuyMarketContent() : _buildSellMarketContent(),
+      ],
+    );
+  }
 
-        const SizedBox(height: 14),
-
-        _ActiveModeNotice(isBuySelected: isBuySelected),
-
-        const SizedBox(height: 20),
-
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.32),
+  Widget _buildBuyMarketContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: _MarketInfoCard(
+                label: 'Saldo fictício',
+                value: 'R\$ 5.000,00',
+              ),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                isBuySelected ? 'Nova compra' : 'Nova venda',
-                style: const TextStyle(
-                  color: AppColors.primaryLight,
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _MarketInfoCard(
+                label: 'Ofertas abertas',
+                value: availableOffers.length.toString(),
               ),
-
-              const SizedBox(height: 6),
-
-              Text(
-                isBuySelected
-                    ? 'Informe a startup, quantidade e preço máximo.'
-                    : 'Informe a startup, quantidade e preço desejado.',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                  height: 1.4,
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              const Text(
-                'Startup',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              _StartupSelector(
-                selectedStartup: selectedStartup,
-                onChanged: (value) {
-                  setState(() {
-                    selectedStartup = value;
-                  });
-                },
-              ),
-
-              const SizedBox(height: 18),
-
-              const Row(
-                children: [
-                  Expanded(
-                    child: _MarketInfoCard(
-                      label: 'Preço atual',
-                      value: 'R\$ 12,50',
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _MarketInfoCard(
-                      label: 'Saldo',
-                      value: 'R\$ 5.000,00',
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 18),
-
-              Text(
-                isBuySelected
-                    ? 'Quantidade para comprar'
-                    : 'Quantidade para vender',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              TextField(
-                controller: quantityController,
-                keyboardType: TextInputType.number,
-                onChanged: (_) => setState(() {}),
-                decoration: _inputDecoration('Ex: 10'),
-                style: const TextStyle(color: Colors.white),
-              ),
-
-              const SizedBox(height: 18),
-
-              Text(
-                isBuySelected
-                    ? 'Preço máximo por token'
-                    : 'Preço desejado por token',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              TextField(
-                controller: priceController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                onChanged: (_) => setState(() {}),
-                decoration: _inputDecoration('Ex: 12,50'),
-                style: const TextStyle(color: Colors.white),
-              ),
-
-              const SizedBox(height: 20),
-
-              _OrderSummary(
-                isBuySelected: isBuySelected,
-                selectedStartup: selectedStartup,
-                quantity: quantity,
-                priceText: priceController.text,
-                total: _formatCurrency(total),
-              ),
-
-              const SizedBox(height: 22),
-
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton.icon(
-                  onPressed: quantity <= 0 || unitPrice <= 0
-                      ? null
-                      : () => _showResultDialog(context),
-                  icon: Icon(
-                    isBuySelected
-                        ? Icons.add_shopping_cart_rounded
-                        : Icons.sell_rounded,
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor:
-                    Colors.white.withValues(alpha: 0.08),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  label: Text(
-                    isBuySelected
-                        ? 'Confirmar compra'
-                        : 'Confirmar venda',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-
-        const SizedBox(height: 24),
-
+        const SizedBox(height: 22),
         const Text(
-          'Ofertas simuladas',
+          'Ofertas disponíveis',
           style: TextStyle(
             color: Colors.white,
             fontSize: 22,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
           ),
         ),
-
+        const SizedBox(height: 6),
+        const Text(
+          'Escolha uma oferta para comprar tokens simulados de uma startup.',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+            height: 1.4,
+          ),
+        ),
         const SizedBox(height: 14),
+        ...availableOffers.map(
+              (offer) => _AvailableOfferCard(
+            offer: offer,
+            formatCurrency: _formatCurrency,
+            onBuy: () => _showBuyOfferDialog(context, offer),
+          ),
+        ),
+      ],
+    );
+  }
 
-        const _OfferCard(
-          type: 'Compra',
-          startup: 'VisionAI Health',
-          price: 'R\$ 12,40',
-          quantity: '150 tokens',
+  Widget _buildSellMarketContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _MarketInfoCard(
+                label: 'Tokens na carteira',
+                value: totalTokensInWallet.toString(),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _MarketInfoCard(
+                label: 'Valor estimado',
+                value: _formatCurrency(estimatedWalletValue),
+              ),
+            ),
+          ],
         ),
-        const _OfferCard(
-          type: 'Venda',
-          startup: 'GreenVolt Hub',
-          price: 'R\$ 9,80',
-          quantity: '200 tokens',
+        const SizedBox(height: 22),
+        const Text(
+          'Meus tokens',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+          ),
         ),
-        const _OfferCard(
-          type: 'Compra',
-          startup: 'AgroLink Data',
-          price: 'R\$ 7,10',
-          quantity: '90 tokens',
+        const SizedBox(height: 6),
+        const Text(
+          'Selecione uma startup da sua carteira para criar uma oferta de venda.',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+            height: 1.4,
+          ),
+        ),
+        const SizedBox(height: 14),
+        ...userPositions.map(
+              (position) => _UserTokenCard(
+            position: position,
+            formatCurrency: _formatCurrency,
+            onSell: () => _openSellOfferSheet(context, position),
+          ),
         ),
       ],
     );
@@ -550,7 +475,9 @@ class _CatalogPageState extends State<CatalogPage> {
     return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
   }
 
-  void _showResultDialog(BuildContext context) {
+  void _showBuyOfferDialog(BuildContext context, _AvailableOffer offer) {
+    final total = offer.quantity * offer.unitPrice;
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -558,14 +485,57 @@ class _CatalogPageState extends State<CatalogPage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
         ),
-        title: Text(
-          isBuySelected ? 'Compra confirmada' : 'Venda confirmada',
-          style: const TextStyle(color: Colors.white),
+        title: const Text(
+          'Confirmar compra',
+          style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          isBuySelected
-              ? 'Sua oferta de compra foi registrada com sucesso.'
-              : 'Sua oferta de venda foi registrada com sucesso.',
+          'Você está comprando ${offer.quantity} tokens da ${offer.startup} por ${_formatCurrency(total)}.',
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showBuyResultDialog(offer);
+            },
+            child: const Text(
+              'Comprar',
+              style: TextStyle(
+                color: AppColors.primaryLight,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBuyResultDialog(_AvailableOffer offer) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF102235),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        title: const Text(
+          'Compra confirmada',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'A compra simulada dos tokens da ${offer.startup} foi concluída com sucesso.',
           style: const TextStyle(
             color: AppColors.textSecondary,
             height: 1.5,
@@ -576,13 +546,409 @@ class _CatalogPageState extends State<CatalogPage> {
             onPressed: () => Navigator.pop(context),
             child: const Text(
               'Fechar',
-              style: TextStyle(color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.primaryLight),
             ),
           ),
         ],
       ),
     );
   }
+
+  void _openSellOfferSheet(
+      BuildContext context,
+      _UserTokenPosition position,
+      ) {
+    final TextEditingController sellQuantityController =
+    TextEditingController();
+
+    final TextEditingController sellPriceController = TextEditingController(
+      text: position.currentPrice.toStringAsFixed(2).replaceAll('.', ','),
+    );
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final int sellQuantity =
+                int.tryParse(sellQuantityController.text) ?? 0;
+
+            final double sellPrice = double.tryParse(
+              sellPriceController.text.replaceAll(',', '.'),
+            ) ??
+                0;
+
+            final double total = sellQuantity * sellPrice;
+
+            final bool hasValidQuantity = sellQuantity > 0;
+            final bool hasValidPrice = sellPrice > 0;
+            final bool hasEnoughTokens = sellQuantity <= position.tokensOwned;
+
+            final bool canPublish =
+                hasValidQuantity && hasValidPrice && hasEnoughTokens;
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.88,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF071A2B),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.42),
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(22),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: AppColors.textSecondary.withValues(
+                              alpha: 0.45,
+                            ),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.16),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: AppColors.primary.withValues(alpha: 0.30),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.sell_rounded,
+                              color: AppColors.primaryLight,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Text(
+                              'Criar oferta de venda',
+                              style: TextStyle(
+                                color: AppColors.primaryLight,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(sheetContext),
+                            icon: const Icon(
+                              Icons.close_rounded,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Você está criando uma oferta de venda para os tokens da ${position.startup}.',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          height: 1.45,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.04),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              position.startup,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              position.sector,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _MiniInfo(
+                                    label: 'Você possui',
+                                    value: '${position.tokensOwned} tokens',
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _MiniInfo(
+                                    label: 'Valor atual',
+                                    value: _formatCurrency(
+                                      position.currentPrice,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      const Text(
+                        'Quantidade para vender',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: sellQuantityController,
+                        keyboardType: TextInputType.number,
+                        onChanged: (_) => setModalState(() {}),
+                        decoration: _inputDecoration(
+                          'Máximo: ${position.tokensOwned} tokens',
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      if (sellQuantity > position.tokensOwned) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Você só possui ${position.tokensOwned} tokens disponíveis para venda.',
+                          style: const TextStyle(
+                            color: AppColors.primaryLight,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Preço desejado por token',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: sellPriceController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        onChanged: (_) => setModalState(() {}),
+                        decoration: _inputDecoration(
+                          'Valor atual: ${_formatCurrency(position.currentPrice)}',
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      const SizedBox(height: 22),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: AppColors.primary.withValues(alpha: 0.24),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Resumo da oferta',
+                              style: TextStyle(
+                                color: AppColors.primaryLight,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            const _SummaryRow(
+                              label: 'Operação',
+                              value: 'Venda',
+                              highlight: true,
+                            ),
+                            _SummaryRow(
+                              label: 'Startup',
+                              value: position.startup,
+                            ),
+                            _SummaryRow(
+                              label: 'Tokens disponíveis',
+                              value: '${position.tokensOwned}',
+                            ),
+                            _SummaryRow(
+                              label: 'Quantidade escolhida',
+                              value: sellQuantity.toString(),
+                            ),
+                            _SummaryRow(
+                              label: 'Valor atual do token',
+                              value: _formatCurrency(position.currentPrice),
+                            ),
+                            _SummaryRow(
+                              label: 'Preço de venda',
+                              value: _formatCurrency(sellPrice),
+                            ),
+                            _SummaryRow(
+                              label: 'Valor total',
+                              value: _formatCurrency(total),
+                              highlight: true,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: ElevatedButton.icon(
+                          onPressed: canPublish
+                              ? () {
+                            Navigator.pop(sheetContext);
+                            _showSellResultDialog(
+                              position: position,
+                              quantity: sellQuantity,
+                              price: sellPrice,
+                              total: total,
+                            );
+                          }
+                              : null,
+                          icon: const Icon(Icons.sell_rounded),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor:
+                            Colors.white.withValues(alpha: 0.08),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          label: const Text(
+                            'Publicar oferta de venda',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      sellQuantityController.dispose();
+      sellPriceController.dispose();
+    });
+  }
+
+  void _showSellResultDialog({
+    required _UserTokenPosition position,
+    required int quantity,
+    required double price,
+    required double total,
+  }) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF102235),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        title: const Text(
+          'Oferta publicada',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Sua oferta de venda de $quantity tokens da ${position.startup} foi registrada por ${_formatCurrency(price)} cada, totalizando ${_formatCurrency(total)}.',
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Fechar',
+              style: TextStyle(color: AppColors.primaryLight),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AvailableOffer {
+  final String startup;
+  final String sector;
+  final String stage;
+  final int quantity;
+  final double unitPrice;
+  final String variation;
+
+  const _AvailableOffer({
+    required this.startup,
+    required this.sector,
+    required this.stage,
+    required this.quantity,
+    required this.unitPrice,
+    required this.variation,
+  });
+}
+
+class _UserTokenPosition {
+  final String startup;
+  final String sector;
+  final int tokensOwned;
+  final double currentPrice;
+  final String variation;
+
+  const _UserTokenPosition({
+    required this.startup,
+    required this.sector,
+    required this.tokensOwned,
+    required this.currentPrice,
+    required this.variation,
+  });
 }
 
 class _MainNavigationSelector extends StatelessWidget {
@@ -922,85 +1288,6 @@ class _ModeButton extends StatelessWidget {
   }
 }
 
-class _ActiveModeNotice extends StatelessWidget {
-  final bool isBuySelected;
-
-  const _ActiveModeNotice({
-    required this.isBuySelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(13),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Text(
-        isBuySelected
-            ? 'Modo compra ativo: você está criando uma oferta para adquirir tokens.'
-            : 'Modo venda ativo: você está criando uma oferta para vender tokens.',
-        style: const TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 13.2,
-          height: 1.35,
-        ),
-      ),
-    );
-  }
-}
-
-class _StartupSelector extends StatelessWidget {
-  final String selectedStartup;
-  final ValueChanged<String> onChanged;
-
-  const _StartupSelector({
-    required this.selectedStartup,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final startups = [
-      'VisionAI Health',
-      'GreenVolt Hub',
-      'AgroLink Data',
-    ];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: selectedStartup,
-          dropdownColor: const Color(0xFF102235),
-          iconEnabledColor: AppColors.textSecondary,
-          style: const TextStyle(color: Colors.white, fontSize: 15),
-          isExpanded: true,
-          items: startups
-              .map(
-                (startup) => DropdownMenuItem<String>(
-              value: startup,
-              child: Text(startup),
-            ),
-          )
-              .toList(),
-          onChanged: (value) {
-            if (value != null) onChanged(value);
-          },
-        ),
-      ),
-    );
-  }
-}
-
 class _MarketInfoCard extends StatelessWidget {
   final String label;
   final String value;
@@ -1044,66 +1331,329 @@ class _MarketInfoCard extends StatelessWidget {
   }
 }
 
-class _OrderSummary extends StatelessWidget {
-  final bool isBuySelected;
-  final String selectedStartup;
-  final int quantity;
-  final String priceText;
-  final String total;
+class _AvailableOfferCard extends StatelessWidget {
+  final _AvailableOffer offer;
+  final String Function(double value) formatCurrency;
+  final VoidCallback onBuy;
 
-  const _OrderSummary({
-    required this.isBuySelected,
-    required this.selectedStartup,
-    required this.quantity,
-    required this.priceText,
-    required this.total,
+  const _AvailableOfferCard({
+    required this.offer,
+    required this.formatCurrency,
+    required this.onBuy,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = offer.quantity * offer.unitPrice;
+    final isPositive = !offer.variation.startsWith('-');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.30),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.token_rounded,
+                  color: AppColors.primaryLight,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      offer.startup,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${offer.sector} • ${offer.stage}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.22),
+                  ),
+                ),
+                child: Text(
+                  offer.variation,
+                  style: TextStyle(
+                    color: isPositive
+                        ? AppColors.primaryLight
+                        : AppColors.textSecondary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _MiniInfo(
+                  label: 'Quantidade',
+                  value: '${offer.quantity} tokens',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _MiniInfo(
+                  label: 'Preço/token',
+                  value: formatCurrency(offer.unitPrice),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _MiniInfo(
+                  label: 'Total',
+                  value: formatCurrency(total),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: onBuy,
+              icon: const Icon(Icons.add_shopping_cart_rounded, size: 20),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              label: const Text(
+                'Comprar esta oferta',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UserTokenCard extends StatelessWidget {
+  final _UserTokenPosition position;
+  final String Function(double value) formatCurrency;
+  final VoidCallback onSell;
+
+  const _UserTokenCard({
+    required this.position,
+    required this.formatCurrency,
+    required this.onSell,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final estimatedValue = position.tokensOwned * position.currentPrice;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.30),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet_rounded,
+                  color: AppColors.primaryLight,
+                  size: 21,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      position.startup,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      position.sector,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                position.variation,
+                style: const TextStyle(
+                  color: AppColors.primaryLight,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _MiniInfo(
+                  label: 'Você possui',
+                  value: '${position.tokensOwned} tokens',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _MiniInfo(
+                  label: 'Preço atual',
+                  value: formatCurrency(position.currentPrice),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _MiniInfo(
+                  label: 'Estimado',
+                  value: formatCurrency(estimatedValue),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: OutlinedButton.icon(
+              onPressed: onSell,
+              icon: const Icon(Icons.sell_rounded, size: 20),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryLight,
+                side: BorderSide(
+                  color: AppColors.primary.withValues(alpha: 0.55),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              label: const Text(
+                'Criar oferta de venda',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniInfo extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _MiniInfo({
+    required this.label,
+    required this.value,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 11,
+      ),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.24),
-        ),
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Resumo',
-            style: TextStyle(
-              color: AppColors.primaryLight,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
+          Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 11.5,
             ),
           ),
-          const SizedBox(height: 12),
-          _SummaryRow(
-            label: 'Operação',
-            value: isBuySelected ? 'Compra' : 'Venda',
-            highlight: true,
-          ),
-          _SummaryRow(
-            label: 'Startup',
-            value: selectedStartup,
-          ),
-          _SummaryRow(
-            label: 'Quantidade',
-            value: quantity.toString(),
-          ),
-          _SummaryRow(
-            label: 'Preço unitário',
-            value: 'R\$ $priceText',
-          ),
-          _SummaryRow(
-            label: 'Valor total',
-            value: total,
-            highlight: true,
+          const SizedBox(height: 5),
+          Text(
+            value,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13.2,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),
@@ -1137,101 +1687,16 @@ class _SummaryRow extends StatelessWidget {
               ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              color: highlight ? AppColors.primaryLight : Colors.white,
-              fontSize: 13.5,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OfferCard extends StatelessWidget {
-  final String type;
-  final String startup;
-  final String price;
-  final String quantity;
-
-  const _OfferCard({
-    required this.type,
-    required this.startup,
-    required this.price,
-    required this.quantity,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isBuy = type == 'Compra';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.28),
-              ),
-            ),
+          Flexible(
             child: Text(
-              type,
-              style: const TextStyle(
-                color: AppColors.primaryLight,
+              value,
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: highlight ? AppColors.primaryLight : Colors.white,
+                fontSize: 13.5,
                 fontWeight: FontWeight.w800,
-                fontSize: 13,
               ),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  startup,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  quantity,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            isBuy ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-            color: AppColors.primaryLight,
-            size: 18,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            price,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
             ),
           ),
         ],
