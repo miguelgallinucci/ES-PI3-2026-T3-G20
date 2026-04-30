@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../data/mock_startups.dart';
+import '../data/startup_firestore_service.dart';
 import '../models/startup_model.dart';
 import 'startup_details_page.dart';
 import '../../profile/pages/profile_page.dart';
@@ -20,6 +20,8 @@ class _CatalogPageState extends State<CatalogPage> {
   bool showGuidance = false;
 
   Timer? _guidanceTimer;
+
+  final StartupFirestoreService _startupService = StartupFirestoreService();
 
   final List<_AvailableOffer> availableOffers = const [
     _AvailableOffer(
@@ -335,16 +337,76 @@ class _CatalogPageState extends State<CatalogPage> {
           ),
         ),
         const SizedBox(height: 14),
-        ...mockStartups.map(
-              (startup) => _StartupCatalogCard(
-            name: startup.name,
-            sector: startup.sector,
-            stage: startup.stage,
-            description: startup.description,
-            capital: startup.capital,
-            tokens: startup.tokens,
-            onTap: () => _openDetails(context, startup),
-          ),
+        StreamBuilder<List<StartupModel>>(
+          stream: _startupService.watchStartups(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Padding(
+                padding: EdgeInsets.only(top: 20),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.primaryLight,
+                  ),
+                ),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Text(
+                  'Não foi possível carregar as startups do Firestore.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              );
+            }
+
+            final startups = snapshot.data ?? [];
+
+            if (startups.isEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Text(
+                  'Nenhuma startup cadastrada no Firestore ainda.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              children: startups.map(
+                (startup) => _StartupCatalogCard(
+                  name: startup.name,
+                  sector: startup.sector,
+                  stage: startup.stage,
+                  description: startup.description,
+                  capital: startup.capital,
+                  tokens: startup.tokens,
+                  onTap: () => _openDetails(context, startup),
+                ),
+              ).toList(),
+            );
+          },
         ),
       ],
     );
