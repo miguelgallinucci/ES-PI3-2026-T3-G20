@@ -5,7 +5,11 @@ import '../../catalog/pages/catalog_page.dart';
 import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
+// Desenvolvido por Alycia Santos Bond
+// Tela de cadastro do aplicativo MesclaInvest
 
+/// Página de cadastro do aplicativo MesclaInvest.
+/// Exibe o formulário de registro e envia dados para criação de conta.
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -13,9 +17,12 @@ class RegisterPage extends StatefulWidget {
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
+/// Estado da página de cadastro.
+/// Gerencia os controladores de entrada, validação de dados e criação de conta via Firebase.
 class _RegisterPageState extends State<RegisterPage> {
   final AuthService _authService = AuthService();
 
+  // Controladores para os campos do formulário de cadastro
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _cpfController = TextEditingController();
@@ -24,11 +31,13 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
+  // Estado de carregamento e mensagem de erro
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void dispose() {
+    // Libera os recursos de todos os controladores de texto ao descartar o widget
     _fullNameController.dispose();
     _emailController.dispose();
     _cpfController.dispose();
@@ -38,6 +47,9 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
+  /// Realiza o cadastro de um novo usuário.
+  /// Valida todos os campos, verifica se as senhas conferem, cria a conta no Firebase
+  /// e navega para a página de catálogo após sucesso.
   Future<void> _register() async {
     final fullName = _fullNameController.text.trim();
     final email = _emailController.text.trim();
@@ -111,6 +123,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
+  /// Converte códigos de erro do Firebase em mensagens em português para o usuário.
   String _getFirebaseErrorMessage(String code) {
     switch (code) {
       case 'email-already-in-use':
@@ -168,6 +181,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                     const SizedBox(height: 8),
 
+                    // Título da página de cadastro
                     const Text(
                       'Crie sua conta',
                       textAlign: TextAlign.center,
@@ -181,6 +195,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                     const SizedBox(height: 12),
 
+                    // Texto descritivo da aplicação e benefícios do cadastro
                     const Text(
                       'Cadastre-se para acompanhar startups, tokens e oportunidades do ecossistema Mescla.',
                       textAlign: TextAlign.center,
@@ -193,6 +208,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                     const SizedBox(height: 28),
 
+                    // Bloco principal do formulário de cadastro
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
@@ -220,6 +236,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                           const SizedBox(height: 24),
 
+                          // Campo para o nome completo do usuário
                           AppInput(
                             label: 'Nome completo',
                             hint: 'Seu nome completo',
@@ -227,6 +244,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const SizedBox(height: 18),
 
+                          // Campo para o email usado no cadastro
                           AppInput(
                             label: 'Email',
                             hint: 'seu@email.com',
@@ -234,6 +252,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const SizedBox(height: 18),
 
+                          // Campo para o CPF do usuário
                           AppInput(
                             label: 'CPF',
                             hint: '000.000.000-00',
@@ -241,6 +260,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const SizedBox(height: 18),
 
+                          // Campo para o telefone de contato
                           AppInput(
                             label: 'Telefone',
                             hint: '(00) 00000-0000',
@@ -248,6 +268,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const SizedBox(height: 18),
 
+                          // Campo de senha para o novo usuário
                           AppInput(
                             label: 'Senha',
                             hint: '••••••••',
@@ -256,6 +277,7 @@ class _RegisterPageState extends State<RegisterPage> {
                           ),
                           const SizedBox(height: 18),
 
+                          // Campo para confirmar a senha digitada
                           AppInput(
                             label: 'Confirmar senha',
                             hint: '••••••••',
@@ -263,6 +285,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             controller: _confirmPasswordController,
                           ),
 
+                          // Mostra mensagem de erro quando a validação ou cadastro falham
                           if (_errorMessage != null) ...[
                             const SizedBox(height: 18),
                             Container(

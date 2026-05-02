@@ -9,6 +9,9 @@ import 'forgot_password_page.dart';
 import 'register_page.dart';
 import '../../catalog/pages/catalog_page.dart';
 
+// Desenvolvido por Alycia Santos Bond
+// Tela de login do aplicativo MesclaInvest
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -16,23 +19,31 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
+/// Estado da página de login.
+/// Gerencia os controladores de entrada, estado de carregamento e mensagens de erro.
 class _LoginPageState extends State<LoginPage> {
   final AuthService _authService = AuthService();
 
+  // Controladores para os campos de email e senha
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  // Estado de carregamento, visibilidade de senha e mensagem de erro
   bool _isLoading = false;
   bool _obscurePassword = true;
   String? _errorMessage;
 
   @override
   void dispose() {
+    // Libera os recursos dos controladores de texto ao descartar o widget
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
+  /// Realiza o login do usuário com email e senha.
+  /// Valida os campos, faz autenticação via Firebase e navega para a página de catálogo.
+  /// Trata erros de autenticação e exibe mensagens apropriadas.
   Future<void> _login() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -80,6 +91,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  /// Converte códigos de erro do Firebase em mensagens em português para o usuário.
   String _getFirebaseErrorMessage(String code) {
     switch (code) {
       case 'invalid-email':
@@ -102,6 +114,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Container com gradiente azul escuro como fundo
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -125,6 +138,7 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     const SizedBox(height: 6),
 
+                    // Seção superior com gráfico decorativo, logo da aplicação e título de boas-vindas
                     SizedBox(
                       height: 300,
                       child: Stack(
@@ -240,6 +254,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 6),
 
+                    // Texto descritivo da aplicação
                     const Text(
                       'Acompanhe startups, tokens e investimentos em um ambiente moderno e interativo.',
                       textAlign: TextAlign.center,
@@ -252,6 +267,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 28),
 
+                    // Painel principal com formulário de login
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
@@ -264,6 +280,7 @@ class _LoginPageState extends State<LoginPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          // Título do formulário
                           const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 10),
                             child: Text(
@@ -278,6 +295,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 24),
 
+                          // Campo de entrada para email
                           AppInput(
                             label: 'Email',
                             hint: 'seu@email.com',
@@ -285,6 +303,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 18),
 
+                          // Campo de entrada para senha com toggle de visibilidade
                           AppInput(
                             label: 'Senha',
                             hint: '••••••••',
@@ -307,6 +326,7 @@ class _LoginPageState extends State<LoginPage> {
 
                           const SizedBox(height: 12),
 
+                          // Botão para recuperação de senha
                           Align(
                             alignment: Alignment.centerRight,
                             child: Padding(
@@ -332,6 +352,7 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
 
+                          // Exibe mensagem de erro se houver falha na autenticação
                           if (_errorMessage != null) ...[
                             const SizedBox(height: 18),
                             Container(
@@ -356,6 +377,7 @@ class _LoginPageState extends State<LoginPage> {
 
                           const SizedBox(height: 24),
 
+                          // Botão principal de login
                           AppButton(
                             text: _isLoading ? 'Entrando...' : 'Entrar',
                             onPressed: _isLoading ? () {} : _login,
@@ -363,6 +385,7 @@ class _LoginPageState extends State<LoginPage> {
 
                           const SizedBox(height: 18),
 
+                          // Link para página de cadastro
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -405,13 +428,17 @@ class _LoginPageState extends State<LoginPage> {
   }
 }
 
+/// Painter personalizado que desenha um gráfico decorativo com linhas azuis e gradiente rosa.
+/// Usado como elemento visual na seção superior da página de login.
 class PremiumChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
+    // Desenha linhas de grade muito sutis como fundo
     final gridPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.025)
       ..strokeWidth = 1;
 
+    // Linhas horizontais da grade
     for (int i = 1; i <= 4; i++) {
       final y = size.height * (i / 5);
       canvas.drawLine(
@@ -421,6 +448,7 @@ class PremiumChartPainter extends CustomPainter {
       );
     }
 
+    // Linhas verticais da grade
     for (int i = 1; i <= 5; i++) {
       final x = size.width * (i / 6);
       canvas.drawLine(
@@ -430,6 +458,7 @@ class PremiumChartPainter extends CustomPainter {
       );
     }
 
+    // Pontos da primeira linha do gráfico (azul)
     final blueLinePoints = [
       Offset(size.width * 0.00, size.height * 0.62),
       Offset(size.width * 0.18, size.height * 0.38),
@@ -439,6 +468,7 @@ class PremiumChartPainter extends CustomPainter {
       Offset(size.width * 0.96, size.height * 0.12),
     ];
 
+    // Pontos da segunda linha do gráfico (gradiente rosa/primário)
     final pinkLinePoints = [
       Offset(size.width * 0.00, size.height * 0.72),
       Offset(size.width * 0.16, size.height * 0.82),
@@ -448,6 +478,7 @@ class PremiumChartPainter extends CustomPainter {
       Offset(size.width * 0.94, size.height * 0.52),
     ];
 
+    // Helper para construir um caminho a partir de uma lista de pontos
     Path buildLinePath(List<Offset> points) {
       final path = Path()..moveTo(points.first.dx, points.first.dy);
 
@@ -458,9 +489,11 @@ class PremiumChartPainter extends CustomPainter {
       return path;
     }
 
+    // Cria os caminhos para as duas linhas do gráfico
     final bluePath = buildLinePath(blueLinePoints);
     final pinkPath = buildLinePath(pinkLinePoints);
 
+    // Paint para o brilho/glow da linha azul
     final blueGlowPaint = Paint()
       ..color = const Color(0xFF3BA7FF).withValues(alpha: 0.16)
       ..strokeWidth = 10
@@ -469,6 +502,7 @@ class PremiumChartPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
+    // Paint para o brilho/glow da linha rosa
     final pinkGlowPaint = Paint()
       ..color = AppColors.primaryLight.withValues(alpha: 0.14)
       ..strokeWidth = 10
@@ -477,6 +511,7 @@ class PremiumChartPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
+    // Paint para a linha azul sólida
     final blueLinePaint = Paint()
       ..color = const Color(0xFF3BA7FF).withValues(alpha: 0.95)
       ..strokeWidth = 4.2
@@ -484,6 +519,7 @@ class PremiumChartPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
+    // Paint para a linha rosa com gradiente
     final pinkLinePaint = Paint()
       ..shader = const LinearGradient(
         colors: [

@@ -5,6 +5,9 @@ import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 
+// Desenvolvido por Alycia Santos Bond
+// Tela de recuperação de senha do aplicativo MesclaInvest
+
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
 
@@ -12,20 +15,26 @@ class ForgotPasswordPage extends StatefulWidget {
   State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
+/// Estado da página de recuperação de senha.
+/// Gerencia o envio do email de redefinição e as mensagens de feedback.
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final AuthService _authService = AuthService();
   final TextEditingController _emailController = TextEditingController();
 
+  // Estado de carregamento, mensagem de feedback e indicador de sucesso
   bool _isLoading = false;
   String? _message;
   bool _isSuccess = false;
 
   @override
   void dispose() {
+    // Libera os recursos do controlador de texto ao descartar o widget
     _emailController.dispose();
     super.dispose();
   }
 
+  /// Envia um email de recuperação de senha para o usuário.
+  /// Valida o email, envia a instrução via Firebase e exibe mensagem de sucesso ou erro.
   Future<void> _sendPasswordResetEmail() async {
     final email = _emailController.text.trim();
 
@@ -69,6 +78,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     }
   }
 
+  /// Converte códigos de erro do Firebase em mensagens em português para o usuário.
   String _getFirebaseErrorMessage(String code) {
     switch (code) {
       case 'invalid-email':
@@ -89,6 +99,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     final Color feedbackColor = _isSuccess ? Colors.green : Colors.red;
 
     return Scaffold(
+      // Container com gradiente azul escuro como fundo
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -112,6 +123,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   children: [
                     const SizedBox(height: 12),
 
+                    // Botão de voltar para a página anterior
                     Row(
                       children: [
                         IconButton(
@@ -126,6 +138,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                     const SizedBox(height: 8),
 
+                    // Título da página de recuperação de senha
                     const Text(
                       'Recuperar senha',
                       textAlign: TextAlign.center,
@@ -139,6 +152,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                     const SizedBox(height: 12),
 
+                    // Texto descritivo com instruções para recuperação
                     const Text(
                       'Informe seu email para receber as instruções de redefinição de senha.',
                       textAlign: TextAlign.center,
@@ -151,6 +165,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                     const SizedBox(height: 28),
 
+                    // Painel principal com formulário de recuperação
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
@@ -163,6 +178,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          // Título do formulário
                           const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 10),
                             child: Text(
@@ -178,12 +194,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                           const SizedBox(height: 24),
 
+                          // Campo de entrada para email
                           AppInput(
                             label: 'Email',
                             hint: 'seu@email.com',
                             controller: _emailController,
                           ),
 
+                          // Exibe mensagem de feedback (sucesso ou erro)
                           if (_message != null) ...[
                             const SizedBox(height: 18),
                             Container(
@@ -208,6 +226,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
                           const SizedBox(height: 24),
 
+                          // Botão para enviar email de recuperação
                           AppButton(
                             text: _isLoading
                                 ? 'Enviando...'
