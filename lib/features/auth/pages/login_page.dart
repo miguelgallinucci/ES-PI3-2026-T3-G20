@@ -1,14 +1,102 @@
 import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 import 'forgot_password_page.dart';
 import 'register_page.dart';
 import '../../catalog/pages/catalog_page.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final AuthService _authService = AuthService();
+
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        _errorMessage = 'Preencha e-mail e senha para continuar.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _authService.login(
+        email: email,
+        password: password,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const CatalogPage(),
+        ),
+      );
+    } on FirebaseAuthException catch (error) {
+      setState(() {
+        _errorMessage = _getFirebaseErrorMessage(error.code);
+      });
+    } catch (_) {
+      setState(() {
+        _errorMessage = 'Não foi possível entrar. Tente novamente.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  String _getFirebaseErrorMessage(String code) {
+    switch (code) {
+      case 'invalid-email':
+        return 'O e-mail informado não é válido.';
+      case 'user-disabled':
+        return 'Esta conta foi desativada.';
+      case 'user-not-found':
+        return 'Não encontramos uma conta com este e-mail.';
+      case 'wrong-password':
+        return 'Senha incorreta.';
+      case 'invalid-credential':
+        return 'E-mail ou senha incorretos.';
+      case 'too-many-requests':
+        return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
+      default:
+        return 'Erro ao fazer login. Verifique os dados e tente novamente.';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -186,16 +274,18 @@ class LoginPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 24),
 
-                          const AppInput(
+                          AppInput(
                             label: 'Email',
                             hint: 'seu@email.com',
+                            controller: _emailController,
                           ),
                           const SizedBox(height: 18),
 
-                          const AppInput(
+                          AppInput(
                             label: 'Senha',
                             hint: '••••••••',
                             obscureText: true,
+                            controller: _passwordController,
                           ),
                           const SizedBox(height: 12),
 
@@ -209,7 +299,7 @@ class LoginPage extends StatelessWidget {
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) =>
-                                      const ForgotPasswordPage(),
+                                          const ForgotPasswordPage(),
                                     ),
                                   );
                                 },
@@ -223,18 +313,34 @@ class LoginPage extends StatelessWidget {
                               ),
                             ),
                           ),
+
+                          if (_errorMessage != null) ...[
+                            const SizedBox(height: 18),
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.red.withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: Text(
+                                _errorMessage!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+
                           const SizedBox(height: 24),
 
                           AppButton(
-                            text: 'Entrar',
-                            onPressed: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const CatalogPage(),
-                                ),
-                              );
-                            },
+                            text: _isLoading ? 'Entrando...' : 'Entrar',
+                            onPressed: _isLoading ? () {} : _login,
                           ),
 
                           const SizedBox(height: 18),

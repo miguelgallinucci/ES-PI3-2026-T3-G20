@@ -1,13 +1,93 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 
-class ForgotPasswordPage extends StatelessWidget {
+class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
 
   @override
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
+}
+
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  final AuthService _authService = AuthService();
+  final TextEditingController _emailController = TextEditingController();
+
+  bool _isLoading = false;
+  String? _message;
+  bool _isSuccess = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendPasswordResetEmail() async {
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      setState(() {
+        _message = 'Informe seu e-mail para recuperar a senha.';
+        _isSuccess = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _message = null;
+      _isSuccess = false;
+    });
+
+    try {
+      await _authService.sendPasswordResetEmail(email: email);
+
+      setState(() {
+        _message = 'Enviamos as instruções de recuperação para o e-mail informado.';
+        _isSuccess = true;
+      });
+    } on FirebaseAuthException catch (error) {
+      setState(() {
+        _message = _getFirebaseErrorMessage(error.code);
+        _isSuccess = false;
+      });
+    } catch (_) {
+      setState(() {
+        _message = 'Não foi possível enviar o e-mail. Tente novamente.';
+        _isSuccess = false;
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  String _getFirebaseErrorMessage(String code) {
+    switch (code) {
+      case 'invalid-email':
+        return 'O e-mail informado não é válido.';
+      case 'user-not-found':
+        return 'Não encontramos uma conta com este e-mail.';
+      case 'too-many-requests':
+        return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
+      case 'network-request-failed':
+        return 'Falha de conexão. Verifique sua internet.';
+      default:
+        return 'Erro ao enviar recuperação de senha. Tente novamente.';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final Color feedbackColor = _isSuccess ? Colors.green : Colors.red;
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -77,7 +157,7 @@ class ForgotPasswordPage extends StatelessWidget {
                         vertical: 14,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.03),
+                        color: Colors.white.withValues(alpha: 0.03),
                         borderRadius: BorderRadius.circular(32),
                       ),
                       child: Column(
@@ -98,24 +178,43 @@ class ForgotPasswordPage extends StatelessWidget {
 
                           const SizedBox(height: 24),
 
-                          const AppInput(
+                          AppInput(
                             label: 'Email',
                             hint: 'seu@email.com',
+                            controller: _emailController,
                           ),
+
+                          if (_message != null) ...[
+                            const SizedBox(height: 18),
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: feedbackColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: feedbackColor.withValues(alpha: 0.35),
+                                ),
+                              ),
+                              child: Text(
+                                _message!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
 
                           const SizedBox(height: 24),
 
                           AppButton(
-                            text: 'Enviar instruções',
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Instruções enviadas para o email informado.',
-                                  ),
-                                ),
-                              );
-                            },
+                            text: _isLoading
+                                ? 'Enviando...'
+                                : 'Enviar instruções',
+                            onPressed: _isLoading
+                                ? () {}
+                                : _sendPasswordResetEmail,
                           ),
                         ],
                       ),
