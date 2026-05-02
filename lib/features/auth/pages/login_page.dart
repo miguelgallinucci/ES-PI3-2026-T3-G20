@@ -23,6 +23,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   bool _isLoading = false;
+  bool _obscurePassword = true;
   String? _errorMessage;
 
   @override
@@ -131,8 +132,11 @@ class _LoginPageState extends State<LoginPage> {
                           Positioned.fill(
                             child: Opacity(
                               opacity: 0.25,
-                              child: CustomPaint(
-                                painter: PremiumChartPainter(),
+                              child: Transform.translate(
+                                offset: const Offset(0, -27),
+                                child: CustomPaint(
+                                  painter: PremiumChartPainter(),
+                                ),
                               ),
                             ),
                           ),
@@ -284,9 +288,23 @@ class _LoginPageState extends State<LoginPage> {
                           AppInput(
                             label: 'Senha',
                             hint: '••••••••',
-                            obscureText: true,
+                            obscureText: _obscurePassword,
                             controller: _passwordController,
+                            suffixIcon: IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                           ),
+
                           const SizedBox(height: 12),
 
                           Align(
@@ -299,7 +317,7 @@ class _LoginPageState extends State<LoginPage> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) =>
-                                          const ForgotPasswordPage(),
+                                      const ForgotPasswordPage(),
                                     ),
                                   );
                                 },

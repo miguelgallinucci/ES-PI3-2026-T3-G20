@@ -6,6 +6,7 @@ class AppInput extends StatelessWidget {
   final String hint;
   final bool obscureText;
   final TextEditingController? controller;
+  final Widget? suffixIcon;
 
   const AppInput({
     super.key,
@@ -13,6 +14,7 @@ class AppInput extends StatelessWidget {
     required this.hint,
     this.obscureText = false,
     this.controller,
+    this.suffixIcon,
   });
 
   @override
@@ -35,6 +37,11 @@ class AppInput extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(color: AppColors.textSecondary),
+            suffixIcon: suffixIcon,
+            suffixIconConstraints: const BoxConstraints(
+              minWidth: 52,
+              minHeight: 52,
+            ),
             filled: true,
             fillColor: AppColors.input,
             contentPadding: const EdgeInsets.symmetric(
