@@ -7,6 +7,8 @@ class MesclaInvestApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    //MaterialApp é como se fosse a “caixa principal” do app Flutter, define coisas globais
+// ex: comportamento geral do app, titulo do app, rotas/navegacao
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'MesclaInvest',
@@ -15,7 +17,17 @@ class MesclaInvestApp extends StatelessWidget {
         scaffoldBackgroundColor: AppColors.background,
         useMaterial3: true,
       ),
+      scrollBehavior: const NoBounceScrollBehavior(),
       home: const LoginPage(),
     );
+  }
+}
+
+class NoBounceScrollBehavior extends ScrollBehavior {
+  const NoBounceScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const ClampingScrollPhysics();
   }
 }
