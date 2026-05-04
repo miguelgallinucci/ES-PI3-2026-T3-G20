@@ -114,9 +114,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
               const SizedBox(height: 8),
-
               const Text(
                 'Esse valor é fictício e será usado apenas para simular compras de tokens no aplicativo.',
                 style: TextStyle(
@@ -125,9 +123,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                   height: 1.4,
                 ),
               ),
-
               const SizedBox(height: 20),
-
               Row(
                 children: [
                   Expanded(
@@ -152,9 +148,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 18),
-
               TextField(
                 controller: amountController,
                 keyboardType: TextInputType.number,
@@ -184,9 +178,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 18),
-
               SizedBox(
                 width: double.infinity,
                 height: 54,
@@ -297,8 +289,9 @@ class _PortfolioPageState extends State<PortfolioPage> {
                     }
 
                     final userData = userSnapshot.data?.data() ?? {};
+                    final rawBalance = userData['saldoFicticio'] ?? 0;
                     final balance =
-                        (userData['saldoFicticio'] ?? 0).toDouble();
+                    rawBalance is num ? rawBalance.toDouble() : 0.0;
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,9 +307,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 8),
-
                         const Text(
                           'Minha carteira',
                           style: TextStyle(
@@ -326,9 +317,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                             height: 1.2,
                           ),
                         ),
-
                         const SizedBox(height: 10),
-
                         const Text(
                           'Gerencie seu saldo fictício, acompanhe seus tokens e visualize suas movimentações simuladas.',
                           style: TextStyle(
@@ -337,9 +326,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                             height: 1.5,
                           ),
                         ),
-
                         const SizedBox(height: 24),
-
                         Container(
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
@@ -380,9 +367,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                                   ),
                                 ],
                               ),
-
                               const SizedBox(height: 18),
-
                               Row(
                                 children: [
                                   Expanded(
@@ -401,9 +386,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                                   ),
                                 ],
                               ),
-
                               const SizedBox(height: 12),
-
                               const Row(
                                 children: [
                                   Expanded(
@@ -424,9 +407,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                             ],
                           ),
                         ),
-
                         const SizedBox(height: 26),
-
                         const Text(
                           'Meus tokens',
                           style: TextStyle(
@@ -435,18 +416,14 @@ class _PortfolioPageState extends State<PortfolioPage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         const SizedBox(height: 16),
-
                         const _EmptyStateCard(
                           icon: Icons.account_balance_wallet_outlined,
                           title: 'Nenhum token comprado ainda',
                           description:
-                              'Quando você investir em uma startup, os tokens aparecerão aqui.',
+                          'Quando você investir em uma startup, os tokens aparecerão aqui.',
                         ),
-
                         const SizedBox(height: 26),
-
                         const Text(
                           'Histórico',
                           style: TextStyle(
@@ -455,9 +432,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         const SizedBox(height: 16),
-
                         StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                           stream: _portfolioService.watchUserTransactions(),
                           builder: (context, transactionSnapshot) {
@@ -478,19 +453,42 @@ class _PortfolioPageState extends State<PortfolioPage> {
                                 icon: Icons.error_outline_rounded,
                                 title: 'Erro ao carregar histórico',
                                 description:
-                                    'Não foi possível buscar as movimentações da carteira.',
+                                'Não foi possível buscar as movimentações da carteira.',
                               );
                             }
 
                             final transactions =
                                 transactionSnapshot.data?.docs ?? [];
 
+                            transactions.sort((a, b) {
+                              final aData = a.data();
+                              final bData = b.data();
+
+                              final aDate = aData['createdAt'];
+                              final bDate = bData['createdAt'];
+
+                              if (aDate is! Timestamp &&
+                                  bDate is! Timestamp) {
+                                return 0;
+                              }
+
+                              if (aDate is! Timestamp) {
+                                return 1;
+                              }
+
+                              if (bDate is! Timestamp) {
+                                return -1;
+                              }
+
+                              return bDate.compareTo(aDate);
+                            });
+
                             if (transactions.isEmpty) {
                               return const _EmptyStateCard(
                                 icon: Icons.history_rounded,
                                 title: 'Nenhuma movimentação registrada',
                                 description:
-                                    'Os aportes simulados, compras e vendas aparecerão aqui.',
+                                'Os aportes simulados, compras e vendas aparecerão aqui.',
                               );
                             }
 
@@ -501,13 +499,16 @@ class _PortfolioPageState extends State<PortfolioPage> {
                                 final description =
                                     data['descricao'] ?? 'Movimentação';
                                 final type = data['tipo'] ?? '';
+
+                                final rawTotal = data['valorTotal'] ?? 0;
                                 final total =
-                                    (data['valorTotal'] ?? 0).toDouble();
+                                rawTotal is num ? rawTotal.toDouble() : 0.0;
+
                                 final createdAt =
-                                    data['createdAt'] as Timestamp?;
+                                data['createdAt'] as Timestamp?;
 
                                 return _TransactionCard(
-                                  title: description,
+                                  title: description.toString(),
                                   subtitle: type == 'aporte_simulado'
                                       ? 'Crédito interno fictício'
                                       : 'Movimentação simulada',
@@ -518,7 +519,6 @@ class _PortfolioPageState extends State<PortfolioPage> {
                             );
                           },
                         ),
-
                         const SizedBox(height: 24),
                       ],
                     );
@@ -680,6 +680,14 @@ class _TransactionCard extends StatelessWidget {
     required this.date,
   });
 
+  IconData get _icon {
+    if (subtitle.contains('Crédito')) {
+      return Icons.add_card_rounded;
+    }
+
+    return Icons.receipt_long_rounded;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -699,8 +707,8 @@ class _TransactionCard extends StatelessWidget {
               color: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Icon(
-              Icons.add_card_rounded,
+            child: Icon(
+              _icon,
               color: AppColors.primary,
             ),
           ),

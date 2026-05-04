@@ -37,7 +37,6 @@ class PortfolioService {
     return _firestore
         .collection('transactions')
         .where('userId', isEqualTo: uid)
-        .orderBy('createdAt', descending: true)
         .snapshots();
   }
 
