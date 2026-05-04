@@ -107,7 +107,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Adicionar saldo simulado',
+                'Adicionar saldo',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 22,
@@ -116,7 +116,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Esse valor é fictício e será usado apenas para simular compras de tokens no aplicativo.',
+                'Esse valor será usado apenas para compras de tokens no aplicativo.',
                 style: TextStyle(
                   color: AppColors.textSecondary,
                   fontSize: 14,
@@ -192,7 +192,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                     ),
                   ),
                   child: const Text(
-                    'Confirmar saldo simulado',
+                    'Confirmar saldo',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -218,7 +218,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Saldo simulado de ${_formatCurrency(selectedAmount)} adicionado.',
+            'Saldo de ${_formatCurrency(selectedAmount)} adicionado.',
           ),
         ),
       );
@@ -319,7 +319,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                         ),
                         const SizedBox(height: 10),
                         const Text(
-                          'Gerencie seu saldo fictício, acompanhe seus tokens e visualize suas movimentações simuladas.',
+                          'Gerencie seu saldo, acompanhe seus tokens e visualize suas movimentações.',
                           style: TextStyle(
                             fontSize: 15,
                             color: AppColors.textSecondary,
@@ -387,22 +387,9 @@ class _PortfolioPageState extends State<PortfolioPage> {
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              const Row(
-                                children: [
-                                  Expanded(
-                                    child: _SummaryCard(
-                                      label: 'Valor atual',
-                                      value: 'R\$ 0,00',
-                                    ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  Expanded(
-                                    child: _SummaryCard(
-                                      label: 'Startups',
-                                      value: '0',
-                                    ),
-                                  ),
-                                ],
+                              const _SummaryCard(
+                                label: 'Startups',
+                                value: '0',
                               ),
                             ],
                           ),
@@ -488,7 +475,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                                 icon: Icons.history_rounded,
                                 title: 'Nenhuma movimentação registrada',
                                 description:
-                                'Os aportes simulados, compras e vendas aparecerão aqui.',
+                                'Os aportes, compras e vendas aparecerão aqui.',
                               );
                             }
 
@@ -497,7 +484,7 @@ class _PortfolioPageState extends State<PortfolioPage> {
                                 final data = transactionDoc.data();
 
                                 final description =
-                                    data['descricao'] ?? 'Movimentação';
+                                    (data['descricao'] ?? 'Movimentação').replaceAll('simulado', '');
                                 final type = data['tipo'] ?? '';
 
                                 final rawTotal = data['valorTotal'] ?? 0;
@@ -510,8 +497,8 @@ class _PortfolioPageState extends State<PortfolioPage> {
                                 return _TransactionCard(
                                   title: description.toString(),
                                   subtitle: type == 'aporte_simulado'
-                                      ? 'Crédito interno fictício'
-                                      : 'Movimentação simulada',
+                                      ? 'Crédito interno'
+                                      : 'Movimentação',
                                   value: _formatCurrency(total),
                                   date: _formatDate(createdAt),
                                 );

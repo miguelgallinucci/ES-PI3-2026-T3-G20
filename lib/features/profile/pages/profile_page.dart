@@ -175,7 +175,7 @@ class ProfilePage extends StatelessWidget {
                         ),
                         _ActionCard(
                           icon: Icons.bar_chart_rounded,
-                          title: 'Dashboard',
+                          title: 'Meus Investimentos',
                           subtitle:
                           'Acompanhe desempenho, métricas e valorização.',
                           onTap: () {

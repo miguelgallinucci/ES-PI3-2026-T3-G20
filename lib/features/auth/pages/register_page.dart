@@ -197,7 +197,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                     // Texto descritivo da aplicação e benefícios do cadastro
                     const Text(
-                      'Cadastre-se para acompanhar startups, tokens e oportunidades do ecossistema Mescla.',
+                      'Cadastre seus dados acompanhar startups, tokens e oportunidades do ecossistema Mescla.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 15,
@@ -224,9 +224,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           const Padding(
                             padding: EdgeInsets.symmetric(horizontal: 10),
                             child: Text(
-                              'Preencha seus dados para começar.',
+                              'Preencha todos os seus dados para começar.',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
                                 height: 1.4,

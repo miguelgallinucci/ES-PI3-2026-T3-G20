@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/startup_firestore_service.dart';
@@ -17,9 +15,7 @@ class CatalogPage extends StatefulWidget {
 class _CatalogPageState extends State<CatalogPage> {
   bool showMarket = false;
   bool isBuySelected = true;
-  bool showGuidance = false;
-
-  Timer? _guidanceTimer;
+  bool showGuidance = true;
 
   final StartupFirestoreService _startupService = StartupFirestoreService();
 
@@ -88,41 +84,15 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
-  @override
-  void dispose() {
-    _guidanceTimer?.cancel();
-    super.dispose();
-  }
-
   void _selectStartups() {
     setState(() {
       showMarket = false;
     });
-
-    _showTemporaryGuidance();
   }
 
   void _selectMarket() {
     setState(() {
       showMarket = true;
-    });
-
-    _showTemporaryGuidance();
-  }
-
-  void _showTemporaryGuidance() {
-    _guidanceTimer?.cancel();
-
-    setState(() {
-      showGuidance = true;
-    });
-
-    _guidanceTimer = Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
-
-      setState(() {
-        showGuidance = false;
-      });
     });
   }
 
@@ -231,7 +201,6 @@ class _CatalogPageState extends State<CatalogPage> {
                             title: _guidanceTitle,
                             description: _guidanceDescription,
                             onClose: () {
-                              _guidanceTimer?.cancel();
                               setState(() {
                                 showGuidance = false;
                               });
@@ -1074,11 +1043,20 @@ class _StartupCatalogCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _SectorBadge(text: sector),
-              const Spacer(),
-              Flexible(
+              Expanded(
+                child: Text(
+                  sector,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.primaryLight,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Text(
                   stage,
                   textAlign: TextAlign.right,
@@ -1086,7 +1064,7 @@ class _StartupCatalogCard extends StatelessWidget {
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -1226,35 +1204,6 @@ class _StartupLogo extends StatelessWidget {
   }
 }
 
-class _SectorBadge extends StatelessWidget {
-  final String text;
-
-  const _SectorBadge({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 180),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.24),
-        ),
-      ),
-      child: Text(
-        text,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          color: AppColors.primaryLight,
-          fontSize: 13,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
-  }
-}
 
 class _StartupMetricBox extends StatelessWidget {
   final String label;
@@ -1640,49 +1589,65 @@ class _ModeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Ink(
-        height: 58,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.primary.withValues(alpha: 0.20)
-              : Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected
-                ? AppColors.primary.withValues(alpha: 0.75)
-                : AppColors.border,
-            width: selected ? 1.4 : 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: selected ? AppColors.primaryLight : Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: selected ? AppColors.primaryLight : Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.20),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
                 ),
+              ]
+            : [],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(999),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Ink(
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            decoration: BoxDecoration(
+              color: selected
+                  ? AppColors.primary.withValues(alpha: 0.18)
+                  : Colors.white.withValues(alpha: 0.03),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: selected
+                    ? AppColors.primary.withValues(alpha: 0.75)
+                    : AppColors.border,
+                width: selected ? 1.4 : 1,
               ),
             ),
-            if (selected)
-              const Icon(
-                Icons.check_circle_rounded,
-                color: AppColors.primaryLight,
-                size: 20,
-              ),
-          ],
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: selected ? AppColors.primaryLight : Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 9),
+                Flexible(
+                  child: Text(
+                    text,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: selected ? AppColors.primaryLight : Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
