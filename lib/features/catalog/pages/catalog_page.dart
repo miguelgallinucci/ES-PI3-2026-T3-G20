@@ -17,6 +17,11 @@ class _CatalogPageState extends State<CatalogPage> {
   bool isBuySelected = true;
   bool showGuidance = true;
 
+  final TextEditingController _searchController = TextEditingController();
+
+  String selectedSector = 'Todos os setores';
+  String selectedStage = 'Todos os estágios';
+
   final StartupFirestoreService _startupService = StartupFirestoreService();
 
   final List<_AvailableOffer> availableOffers = const [
@@ -94,6 +99,12 @@ class _CatalogPageState extends State<CatalogPage> {
     setState(() {
       showMarket = true;
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   String get _guidanceTitle {
@@ -231,97 +242,164 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   Widget _buildStartupCatalogContent() {
-    return Column(
-      key: const ValueKey('startup-content'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            children: [
-              TextField(
-                decoration: InputDecoration(
-                  hintText: 'Buscar startup',
-                  hintStyle: const TextStyle(
-                    color: AppColors.textSecondary,
-                  ),
-                  prefixIcon: const Icon(
-                    Icons.search_rounded,
-                    color: AppColors.textSecondary,
-                  ),
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.03),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 18,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: const BorderSide(
-                      color: AppColors.border,
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: const BorderSide(
-                      color: AppColors.border,
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: const BorderSide(
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ),
-                style: const TextStyle(color: Colors.white),
+    return StreamBuilder<List<StartupModel>>(
+      stream: _startupService.watchStartups(),
+      builder: (context, snapshot) {
+        final startups = snapshot.data ?? [];
+
+        final sectorOptions = [
+          'Todos os setores',
+          ...{
+            for (final startup in startups)
+              if (startup.sector.trim().isNotEmpty) startup.sector.trim(),
+          },
+        ];
+
+        final stageOptions = [
+          'Todos os estágios',
+          ...{
+            for (final startup in startups)
+              if (startup.stage.trim().isNotEmpty) startup.stage.trim(),
+          },
+        ];
+
+        if (!sectorOptions.contains(selectedSector)) {
+          selectedSector = 'Todos os setores';
+        }
+
+        if (!stageOptions.contains(selectedStage)) {
+          selectedStage = 'Todos os estágios';
+        }
+
+        final searchText = _searchController.text.trim().toLowerCase();
+
+        final filteredStartups = startups.where((startup) {
+          final name = startup.name.toLowerCase();
+          final sector = startup.sector.toLowerCase();
+          final stage = startup.stage.toLowerCase();
+          final description = startup.description.toLowerCase();
+
+          final matchesSearch = searchText.isEmpty ||
+              name.contains(searchText) ||
+              sector.contains(searchText) ||
+              stage.contains(searchText) ||
+              description.contains(searchText);
+
+          final matchesSector = selectedSector == 'Todos os setores' ||
+              startup.sector.toLowerCase() == selectedSector.toLowerCase();
+
+          final matchesStage = selectedStage == 'Todos os estágios' ||
+              startup.stage.toLowerCase() == selectedStage.toLowerCase();
+
+          return matchesSearch && matchesSector && matchesStage;
+        }).toList();
+
+        return Column(
+          key: const ValueKey('startup-content'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: AppColors.border),
               ),
-              const SizedBox(height: 14),
-              const Row(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: _FilterChipBox(text: 'Todos os setores'),
+                  TextField(
+                    controller: _searchController,
+                    onChanged: (_) {
+                      setState(() {});
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Buscar startup',
+                      hintStyle: const TextStyle(
+                        color: AppColors.textSecondary,
+                      ),
+                      prefixIcon: const Icon(
+                        Icons.search_rounded,
+                        color: AppColors.textSecondary,
+                      ),
+                      filled: true,
+                      fillColor: Colors.white.withValues(alpha: 0.03),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 18,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: const BorderSide(
+                          color: AppColors.border,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: const BorderSide(
+                          color: AppColors.border,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        borderSide: const BorderSide(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                    style: const TextStyle(color: Colors.white),
                   ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: _FilterChipBox(text: 'Todos os estágios'),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _FilterChipBox(
+                          text: selectedSector,
+                          options: sectorOptions,
+                          onSelected: (value) {
+                            setState(() {
+                              selectedSector = value;
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _FilterChipBox(
+                          text: selectedStage,
+                          options: stageOptions,
+                          onSelected: (value) {
+                            setState(() {
+                              selectedStage = value;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        const Text(
-          'Startups disponíveis',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 14),
-        StreamBuilder<List<StartupModel>>(
-          stream: _startupService.watchStartups(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Padding(
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Startups disponíveis',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 14),
+            if (snapshot.connectionState == ConnectionState.waiting)
+              const Padding(
                 padding: EdgeInsets.only(top: 20),
                 child: Center(
                   child: CircularProgressIndicator(
                     color: AppColors.primaryLight,
                   ),
                 ),
-              );
-            }
-
-            if (snapshot.hasError) {
-              return Container(
+              )
+            else if (snapshot.hasError)
+              Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -337,13 +415,9 @@ class _CatalogPageState extends State<CatalogPage> {
                     height: 1.4,
                   ),
                 ),
-              );
-            }
-
-            final startups = snapshot.data ?? [];
-
-            if (startups.isEmpty) {
-              return Container(
+              )
+            else if (startups.isEmpty)
+              Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -359,25 +433,42 @@ class _CatalogPageState extends State<CatalogPage> {
                     height: 1.4,
                   ),
                 ),
-              );
-            }
-
-            return Column(
-              children: startups.map(
-                (startup) => _StartupCatalogCard(
-                  name: startup.name,
-                  sector: startup.sector,
-                  stage: startup.stage,
-                  description: startup.description,
-                  capital: startup.capital,
-                  tokens: startup.tokens,
-                  onTap: () => _openDetails(context, startup),
+              )
+            else if (filteredStartups.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.border),
                 ),
-              ).toList(),
-            );
-          },
-        ),
-      ],
+                child: const Text(
+                  'Nenhuma startup encontrada com esses filtros.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              )
+            else
+              Column(
+                children: filteredStartups.map(
+                  (startup) => _StartupCatalogCard(
+                    name: startup.name,
+                    sector: startup.sector,
+                    stage: startup.stage,
+                    description: startup.description,
+                    capital: startup.capital,
+                    tokens: startup.tokens,
+                    onTap: () => _openDetails(context, startup),
+                  ),
+                ).toList(),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -1539,36 +1630,90 @@ class _GuidanceBox extends StatelessWidget {
 
 class _FilterChipBox extends StatelessWidget {
   final String text;
+  final List<String> options;
+  final ValueChanged<String> onSelected;
 
-  const _FilterChipBox({required this.text});
+  const _FilterChipBox({
+    required this.text,
+    required this.options,
+    required this.onSelected,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
+    return PopupMenuButton<String>(
+      color: const Color(0xFF102235),
+      elevation: 8,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        side: const BorderSide(color: AppColors.border),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              text,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
+      onSelected: onSelected,
+      itemBuilder: (context) {
+        return options.map((option) {
+          final bool isSelected = option == text;
+
+          return PopupMenuItem<String>(
+            value: option,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    option,
+                    style: TextStyle(
+                      color: isSelected
+                          ? AppColors.primaryLight
+                          : Colors.white,
+                      fontWeight:
+                          isSelected ? FontWeight.w800 : FontWeight.w500,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  const Icon(
+                    Icons.check_rounded,
+                    color: AppColors.primaryLight,
+                    size: 18,
+                  ),
+              ],
+            ),
+          );
+        }).toList();
+      },
+      child: Container(
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: text.startsWith('Todos')
+                ? AppColors.border
+                : AppColors.primary.withValues(alpha: 0.65),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                text,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: text.startsWith('Todos')
+                      ? Colors.white
+                      : AppColors.primaryLight,
+                  fontSize: 14,
+                  fontWeight:
+                      text.startsWith('Todos') ? FontWeight.w500 : FontWeight.w800,
+                ),
               ),
             ),
-          ),
-          const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            color: AppColors.textSecondary,
-          ),
-        ],
+            const Icon(
+              Icons.keyboard_arrow_down_rounded,
+              color: AppColors.textSecondary,
+            ),
+          ],
+        ),
       ),
     );
   }
