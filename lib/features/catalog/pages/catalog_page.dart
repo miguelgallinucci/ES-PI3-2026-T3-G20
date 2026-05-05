@@ -76,10 +76,7 @@ class _CatalogPageState extends State<CatalogPage> {
   ];
 
   int get totalTokensInWallet {
-    return userPositions.fold(
-      0,
-          (sum, position) => sum + position.tokensOwned,
-    );
+    return userPositions.fold(0, (sum, position) => sum + position.tokensOwned);
   }
 
   double get estimatedWalletValue {
@@ -118,9 +115,7 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   IconData get _guidanceIcon {
-    return showMarket
-        ? Icons.swap_horiz_rounded
-        : Icons.rocket_launch_rounded;
+    return showMarket ? Icons.swap_horiz_rounded : Icons.rocket_launch_rounded;
   }
 
   @override
@@ -131,11 +126,7 @@ class _CatalogPageState extends State<CatalogPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF04111D),
-              Color(0xFF071A2B),
-              Color(0xFF0A2235),
-            ],
+            colors: [Color(0xFF04111D), Color(0xFF071A2B), Color(0xFF0A2235)],
           ),
         ),
         child: SafeArea(
@@ -251,7 +242,8 @@ class _CatalogPageState extends State<CatalogPage> {
           'Todos os setores',
           ...{
             for (final startup in startups)
-              if (startup.sector.trim().isNotEmpty) startup.sector.trim(),
+              for (final category in startup.categories)
+                if (category.trim().isNotEmpty) category.trim(),
           },
         ];
 
@@ -279,17 +271,25 @@ class _CatalogPageState extends State<CatalogPage> {
           final stage = startup.stage.toLowerCase();
           final description = startup.description.toLowerCase();
 
-          final matchesSearch = searchText.isEmpty ||
-              name.contains(searchText) ||
-              sector.contains(searchText) ||
-              stage.contains(searchText) ||
-              description.contains(searchText);
+          final categories = startup.categories
+              .map((category) => category.toLowerCase())
+              .toList();
 
-          final matchesSector = selectedSector == 'Todos os setores' ||
-              startup.sector.toLowerCase() == selectedSector.toLowerCase();
+          final matchesSearch =
+              searchText.isEmpty ||
+                  name.contains(searchText) ||
+                  sector.contains(searchText) ||
+                  stage.contains(searchText) ||
+                  description.contains(searchText) ||
+                  categories.any((category) => category.contains(searchText));
 
-          final matchesStage = selectedStage == 'Todos os estágios' ||
-              startup.stage.toLowerCase() == selectedStage.toLowerCase();
+          final matchesSector =
+              selectedSector == 'Todos os setores' ||
+                  categories.contains(selectedSector.toLowerCase());
+
+          final matchesStage =
+              selectedStage == 'Todos os estágios' ||
+                  startup.stage.toLowerCase() == selectedStage.toLowerCase();
 
           return matchesSearch && matchesSector && matchesStage;
         }).toList();
@@ -329,21 +329,15 @@ class _CatalogPageState extends State<CatalogPage> {
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: const BorderSide(
-                          color: AppColors.border,
-                        ),
+                        borderSide: const BorderSide(color: AppColors.border),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: const BorderSide(
-                          color: AppColors.border,
-                        ),
+                        borderSide: const BorderSide(color: AppColors.border),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(20),
-                        borderSide: const BorderSide(
-                          color: AppColors.primary,
-                        ),
+                        borderSide: const BorderSide(color: AppColors.primary),
                       ),
                     ),
                     style: const TextStyle(color: Colors.white),
@@ -417,55 +411,57 @@ class _CatalogPageState extends State<CatalogPage> {
                 ),
               )
             else if (startups.isEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: const Text(
-                  'Nenhuma startup cadastrada no Firestore ainda.',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 14,
-                    height: 1.4,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.04),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: AppColors.border),
                   ),
-                ),
-              )
-            else if (filteredStartups.isEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: const Text(
-                  'Nenhuma startup encontrada com esses filtros.',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 14,
-                    height: 1.4,
+                  child: const Text(
+                    'Nenhuma startup cadastrada no Firestore ainda.',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
                   ),
-                ),
-              )
-            else
-              Column(
-                children: filteredStartups.map(
-                  (startup) => _StartupCatalogCard(
-                    name: startup.name,
-                    sector: startup.sector,
-                    stage: startup.stage,
-                    description: startup.description,
-                    capital: startup.capital,
-                    tokens: startup.tokens,
-                    onTap: () => _openDetails(context, startup),
+                )
+              else if (filteredStartups.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: const Text(
+                      'Nenhuma startup encontrada com esses filtros.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                  )
+                else
+                  Column(
+                    children: filteredStartups
+                        .map(
+                          (startup) => _StartupCatalogCard(
+                        name: startup.name,
+                        categories: startup.categories,
+                        stage: startup.stage,
+                        description: startup.description,
+                        capital: startup.capital,
+                        tokens: startup.tokens,
+                        onTap: () => _openDetails(context, startup),
+                      ),
+                    )
+                        .toList(),
                   ),
-                ).toList(),
-              ),
           ],
         );
       },
@@ -615,12 +611,16 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   void _openDetails(BuildContext context, StartupModel startup) {
+    final displaySector = startup.categories.isNotEmpty
+        ? startup.categories.join(' / ')
+        : startup.sector;
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => StartupDetailsPage(
           name: startup.name,
-          sector: startup.sector,
+          sector: displaySector,
           stage: startup.stage,
           description: startup.description,
           capital: startup.capital,
@@ -636,10 +636,7 @@ class _CatalogPageState extends State<CatalogPage> {
       hintStyle: const TextStyle(color: AppColors.textSecondary),
       filled: true,
       fillColor: Colors.white.withValues(alpha: 0.03),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 18,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),
         borderSide: const BorderSide(color: AppColors.border),
@@ -666,19 +663,14 @@ class _CatalogPageState extends State<CatalogPage> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF102235),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text(
           'Confirmar compra',
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
           'Você está comprando ${offer.quantity} tokens da ${offer.startup} por ${_formatCurrency(total)}.',
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            height: 1.5,
-          ),
+          style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
         ),
         actions: [
           TextButton(
@@ -711,19 +703,14 @@ class _CatalogPageState extends State<CatalogPage> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF102235),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text(
           'Compra confirmada',
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
           'A compra simulada dos tokens da ${offer.startup} foi concluída com sucesso.',
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            height: 1.5,
-          ),
+          style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
         ),
         actions: [
           TextButton(
@@ -738,10 +725,7 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
-  void _openSellOfferSheet(
-      BuildContext context,
-      _UserTokenPosition position,
-      ) {
+  void _openSellOfferSheet(BuildContext context, _UserTokenPosition position) {
     final TextEditingController sellQuantityController =
     TextEditingController();
 
@@ -759,10 +743,11 @@ class _CatalogPageState extends State<CatalogPage> {
             final int sellQuantity =
                 int.tryParse(sellQuantityController.text) ?? 0;
 
-            final double sellPrice = double.tryParse(
-              sellPriceController.text.replaceAll(',', '.'),
-            ) ??
-                0;
+            final double sellPrice =
+                double.tryParse(
+                  sellPriceController.text.replaceAll(',', '.'),
+                ) ??
+                    0;
 
             final double total = sellQuantity * sellPrice;
 
@@ -818,7 +803,9 @@ class _CatalogPageState extends State<CatalogPage> {
                               color: AppColors.primary.withValues(alpha: 0.16),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: AppColors.primary.withValues(alpha: 0.30),
+                                color: AppColors.primary.withValues(
+                                  alpha: 0.30,
+                                ),
                               ),
                             ),
                             child: const Icon(
@@ -1034,8 +1021,9 @@ class _CatalogPageState extends State<CatalogPage> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
-                            disabledBackgroundColor:
-                            Colors.white.withValues(alpha: 0.08),
+                            disabledBackgroundColor: Colors.white.withValues(
+                              alpha: 0.08,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
@@ -1073,19 +1061,14 @@ class _CatalogPageState extends State<CatalogPage> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF102235),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text(
           'Oferta publicada',
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
           'Sua oferta de venda de $quantity tokens da ${position.startup} foi registrada por ${_formatCurrency(price)} cada, totalizando ${_formatCurrency(total)}.',
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            height: 1.5,
-          ),
+          style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
         ),
         actions: [
           TextButton(
@@ -1103,7 +1086,7 @@ class _CatalogPageState extends State<CatalogPage> {
 
 class _StartupCatalogCard extends StatelessWidget {
   final String name;
-  final String sector;
+  final List<String> categories;
   final String stage;
   final String description;
   final String capital;
@@ -1112,7 +1095,7 @@ class _StartupCatalogCard extends StatelessWidget {
 
   const _StartupCatalogCard({
     required this.name,
-    required this.sector,
+    required this.categories,
     required this.stage,
     required this.description,
     required this.capital,
@@ -1122,6 +1105,8 @@ class _StartupCatalogCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final visibleCategories = categories.take(2).toList();
+
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
       padding: const EdgeInsets.all(20),
@@ -1133,35 +1118,40 @@ class _StartupCatalogCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // TOPO: tags simples à esquerda e estágio no extremo direito
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  sector,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.primaryLight,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: visibleCategories.isEmpty
+                    ? const SizedBox.shrink()
+                    : Wrap(
+                  spacing: 14,
+                  runSpacing: 8,
+                  children: visibleCategories.map((category) {
+                    return _CategoryTag(text: category);
+                  }).toList(),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
+              const SizedBox(width: 16),
+              Align(
+                alignment: Alignment.topRight,
                 child: Text(
                   stage,
                   textAlign: TextAlign.right,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: AppColors.textSecondary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 22),
+
+          const SizedBox(height: 30),
+
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -1180,7 +1170,9 @@ class _StartupCatalogCard extends StatelessWidget {
               ),
             ],
           ),
+
           const SizedBox(height: 16),
+
           Text(
             description,
             style: const TextStyle(
@@ -1190,25 +1182,23 @@ class _StartupCatalogCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
+
           const SizedBox(height: 20),
+
           Row(
             children: [
               Expanded(
-                child: _StartupMetricBox(
-                  label: 'Capital',
-                  value: capital,
-                ),
+                child: _StartupMetricBox(label: 'Capital', value: capital),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _StartupMetricBox(
-                  label: 'Tokens',
-                  value: tokens,
-                ),
+                child: _StartupMetricBox(label: 'Tokens', value: tokens),
               ),
             ],
           ),
+
           const SizedBox(height: 20),
+
           SizedBox(
             width: double.infinity,
             height: 54,
@@ -1224,15 +1214,42 @@ class _StartupCatalogCard extends StatelessWidget {
               ),
               child: const Text(
                 'Ver mais',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CategoryTag extends StatelessWidget {
+  final String text;
+
+  const _CategoryTag({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    if (text.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.sell_rounded, color: AppColors.primaryLight, size: 16),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: AppColors.primaryLight,
+            fontSize: 13.5,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1295,15 +1312,11 @@ class _StartupLogo extends StatelessWidget {
   }
 }
 
-
 class _StartupMetricBox extends StatelessWidget {
   final String label;
   final String value;
 
-  const _StartupMetricBox({
-    required this.label,
-    required this.value,
-  });
+  const _StartupMetricBox({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -1313,9 +1326,7 @@ class _StartupMetricBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.035),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.04),
-        ),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1398,9 +1409,7 @@ class _MainNavigationSelector extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.035),
         borderRadius: BorderRadius.circular(26),
-        border: Border.all(
-          color: AppColors.border,
-        ),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
@@ -1517,8 +1526,9 @@ class _NavigationOption extends StatelessWidget {
                                 ? Colors.white
                                 : AppColors.textSecondary,
                             fontSize: 14.5,
-                            fontWeight:
-                            selected ? FontWeight.w900 : FontWeight.w700,
+                            fontWeight: selected
+                                ? FontWeight.w900
+                                : FontWeight.w700,
                           ),
                         ),
                       ),
@@ -1568,9 +1578,7 @@ class _GuidanceBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.primary.withValues(alpha: 0.28),
-        ),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.28)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1582,11 +1590,7 @@ class _GuidanceBox extends StatelessWidget {
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 20,
-            ),
+            child: Icon(icon, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1661,11 +1665,10 @@ class _FilterChipBox extends StatelessWidget {
                   child: Text(
                     option,
                     style: TextStyle(
-                      color: isSelected
-                          ? AppColors.primaryLight
-                          : Colors.white,
-                      fontWeight:
-                          isSelected ? FontWeight.w800 : FontWeight.w500,
+                      color: isSelected ? AppColors.primaryLight : Colors.white,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w500,
                     ),
                   ),
                 ),
@@ -1703,8 +1706,9 @@ class _FilterChipBox extends StatelessWidget {
                       ? Colors.white
                       : AppColors.primaryLight,
                   fontSize: 14,
-                  fontWeight:
-                      text.startsWith('Todos') ? FontWeight.w500 : FontWeight.w800,
+                  fontWeight: text.startsWith('Todos')
+                      ? FontWeight.w500
+                      : FontWeight.w800,
                 ),
               ),
             ),
@@ -1741,12 +1745,12 @@ class _ModeButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         boxShadow: selected
             ? [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.20),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ]
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.20),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ]
             : [],
       ),
       child: Material(
@@ -1803,10 +1807,7 @@ class _MarketInfoCard extends StatelessWidget {
   final String label;
   final String value;
 
-  const _MarketInfoCard({
-    required this.label,
-    required this.value,
-  });
+  const _MarketInfoCard({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -1941,10 +1942,7 @@ class _AvailableOfferCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _MiniInfo(
-                  label: 'Total',
-                  value: formatCurrency(total),
-                ),
+                child: _MiniInfo(label: 'Total', value: formatCurrency(total)),
               ),
             ],
           ),
@@ -1964,10 +1962,7 @@ class _AvailableOfferCard extends StatelessWidget {
               ),
               label: const Text(
                 'Comprar esta oferta',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
               ),
             ),
           ),
@@ -2086,10 +2081,7 @@ class _UserTokenCard extends StatelessWidget {
               ),
               label: const Text(
                 'Criar oferta de venda',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
               ),
             ),
           ),
@@ -2103,18 +2095,12 @@ class _MiniInfo extends StatelessWidget {
   final String label;
   final String value;
 
-  const _MiniInfo({
-    required this.label,
-    required this.value,
-  });
+  const _MiniInfo({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 11,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(16),

@@ -6,12 +6,14 @@ class StartupFirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Stream<List<StartupModel>> watchStartups() {
-    return _firestore
-        .collection('startups')
-        .snapshots()
-        .map((snapshot) {
+    return _firestore.collection('startups').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
-        return StartupModel.fromFirestore(doc.data());
+        final data = doc.data();
+
+        return StartupModel.fromMap({
+          ...data,
+          'id': doc.id,
+        });
       }).toList();
     });
   }

@@ -1,66 +1,54 @@
 class StartupModel {
+  final String id;
   final String name;
   final String sector;
+  final List<String> categories;
   final String stage;
   final String description;
   final String capital;
   final String tokens;
 
   const StartupModel({
+    this.id = '',
     required this.name,
-    required this.sector,
+    this.sector = '',
+    this.categories = const [],
     required this.stage,
     required this.description,
     required this.capital,
     required this.tokens,
   });
 
-  factory StartupModel.fromFirestore(Map<String, dynamic> data) {
-    final capitalRaised = _toDouble(data['capitalRaised']);
-    final totalTokens = _toInt(data['totalTokens']);
+  factory StartupModel.fromMap(Map<String, dynamic> data) {
+    final List<String> firebaseCategories = data['categorias'] is List
+        ? List<String>.from(data['categorias'])
+        : [];
+
+    final String fallbackSector = data['sector'] ?? '';
+
+    final List<String> finalCategories = firebaseCategories.isNotEmpty
+        ? firebaseCategories
+        : fallbackSector.isNotEmpty
+        ? [fallbackSector]
+        : [];
 
     return StartupModel(
-      name: data['name']?.toString() ?? 'Startup sem nome',
-      sector: data['sector']?.toString() ?? 'Setor não informado',
-      stage: data['stage']?.toString() ?? 'Estágio não informado',
-      description: data['description']?.toString() ?? 'Descrição não informada',
-      capital: _formatCurrency(capitalRaised),
-      tokens: _formatNumber(totalTokens),
+      id: data['id']?.toString() ?? data['idStartup']?.toString() ?? '',
+      name: data['name'] ?? '',
+      sector: finalCategories.isNotEmpty ? finalCategories.first : '',
+      categories: finalCategories,
+      stage: data['stage'] ?? '',
+      description: data['description'] ?? '',
+      capital: data['capitalRaised'] != null
+          ? 'R\$ ${data['capitalRaised']}'
+          : data['capital'] ?? '',
+      tokens: data['totalTokens'] != null
+          ? '${data['totalTokens']}'
+          : data['tokens'] ?? '',
     );
   }
 
-  static double _toDouble(dynamic value) {
-    if (value is int) return value.toDouble();
-    if (value is double) return value;
-    if (value is num) return value.toDouble();
-    return 0;
-  }
-
-  static int _toInt(dynamic value) {
-    if (value is int) return value;
-    if (value is double) return value.toInt();
-    if (value is num) return value.toInt();
-    return 0;
-  }
-
-  static String _formatCurrency(double value) {
-    if (value >= 1000000) {
-      final millions = value / 1000000;
-      return 'R\$ ${millions.toStringAsFixed(1).replaceAll('.', ',')} mi';
-    }
-
-    if (value >= 1000) {
-      final thousands = value / 1000;
-      return 'R\$ ${thousands.toStringAsFixed(0)} mil';
-    }
-
-    return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
-  }
-
-  static String _formatNumber(int value) {
-    return value.toString().replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (match) => '${match[1]}.',
-    );
+  factory StartupModel.fromFirestore(Map<String, dynamic> data) {
+    return StartupModel.fromMap(data);
   }
 }
