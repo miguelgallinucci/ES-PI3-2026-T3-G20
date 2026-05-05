@@ -1,11 +1,12 @@
-// carteira
-
+/// Página de Portfólio (Carteira)
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../services/portfolio_service.dart';
 
+/// Widget principal da página de portfólio
+/// Responsável por exibir a carteira de investimentos do usuário
 class PortfolioPage extends StatefulWidget {
   const PortfolioPage({super.key});
 
@@ -13,9 +14,13 @@ class PortfolioPage extends StatefulWidget {
   State<PortfolioPage> createState() => _PortfolioPageState();
 }
 
+/// Estado da página de portfólio
+/// Gerencia a inicialização, formatação de dados e exibição de modais
 class _PortfolioPageState extends State<PortfolioPage> {
+  /// Serviço responsável por operações do portfólio no Firestore
   final PortfolioService _portfolioService = PortfolioService();
 
+  /// Flag para indicar se a página está em processo de inicialização
   bool _isInitializing = true;
 
   @override
@@ -24,6 +29,9 @@ class _PortfolioPageState extends State<PortfolioPage> {
     _initializePortfolio();
   }
 
+  /// Inicializa o portfólio garantindo que o campo de saldo fictício
+  /// existe no documento do usuário no Firestore.
+  /// Se houver erro, exibe um SnackBar com a mensagem de erro.
   Future<void> _initializePortfolio() async {
     try {
       await _portfolioService.ensurePortfolioFieldExists();
@@ -44,10 +52,14 @@ class _PortfolioPageState extends State<PortfolioPage> {
     }
   }
 
+  /// Formata um valor numérico para o padrão de moeda brasileira (R$)
+  /// Exemplo: 1000.50 -> R$ 1000,50
   String _formatCurrency(double value) {
     return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
   }
 
+  /// Formata uma data do Firestore para o padrão brasileiro (DD/MM/YYYY)
+  /// Se o timestamp for null, retorna 'Agora'
   String _formatDate(Timestamp? timestamp) {
     if (timestamp == null) {
       return 'Agora';
@@ -62,6 +74,9 @@ class _PortfolioPageState extends State<PortfolioPage> {
     return '$day/$month/$year';
   }
 
+  /// Exibe um modal para o usuário adicionar saldo simulado à carteira
+  /// Permite seleção rápida de valores predefinidos ou entrada customizada
+  /// Realiza validação do valor inserido antes de confirmar
   Future<void> _showAddBalanceModal() async {
     final selectedAmount = await showModalBottomSheet<double>(
       context: context,
@@ -233,6 +248,9 @@ class _PortfolioPageState extends State<PortfolioPage> {
     }
   }
 
+  /// Constrói a interface da página de portfólio
+  /// Se está inicializando, exibe carregamento
+  /// Caso contrário, exibe gradiente de fundo, saldo, tokens e histórico de transações
   @override
   Widget build(BuildContext context) {
     if (_isInitializing) {
@@ -368,28 +386,31 @@ class _PortfolioPageState extends State<PortfolioPage> {
                                 ],
                               ),
                               const SizedBox(height: 18),
-                              Row(
+                              SizedBox(
+                                width: double.infinity,
+                                child: _SummaryCard(
+                                  label: 'Saldo disponível',
+                                  value: _formatCurrency(balance),
+                                  isHighlight: true,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              const Row(
                                 children: [
                                   Expanded(
-                                    child: _SummaryCard(
-                                      label: 'Saldo disponível',
-                                      value: _formatCurrency(balance),
-                                      isHighlight: true,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  const Expanded(
                                     child: _SummaryCard(
                                       label: 'Total investido',
                                       value: 'R\$ 0,00',
                                     ),
                                   ),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: _SummaryCard(
+                                      label: 'Startups',
+                                      value: '0',
+                                    ),
+                                  ),
                                 ],
-                              ),
-                              const SizedBox(height: 12),
-                              const _SummaryCard(
-                                label: 'Startups',
-                                value: '0',
                               ),
                             ],
                           ),
@@ -520,17 +541,25 @@ class _PortfolioPageState extends State<PortfolioPage> {
   }
 }
 
+/// Widget auxiliar que exibe resumo da carteira com label e valor
+/// Usado para mostrar informações como saldo disponível, total investido, etc.
 class _SummaryCard extends StatelessWidget {
+  /// Rótulo da informação
   final String label;
+  /// Valor a ser exibido
   final String value;
+  /// Define se o card deve ter destaque especial (border e texto em cor primária)
   final bool isHighlight;
 
+  /// Construtor do card de resumo
   const _SummaryCard({
     required this.label,
     required this.value,
     this.isHighlight = false,
   });
 
+  /// Constrói o card com layout em coluna
+  /// Aplica estilos especiais se isHighlight for true
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -569,15 +598,21 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
+/// Botão auxiliar para rápida seleção de valores de saldo
+/// Exibido no modal de adição de saldo
 class _QuickAmountButton extends StatelessWidget {
+  /// Texto do botão exibindo o valor (ex: "R$ 1.000")
   final String label;
+  /// Callback executado quando o botão é pressionado
   final VoidCallback? onTap;
 
+  /// Construtor do botão de valor rápido
   const _QuickAmountButton({
     required this.label,
     required this.onTap,
   });
 
+  /// Constrói um botão com contorno e estilo primário
   @override
   Widget build(BuildContext context) {
     return OutlinedButton(
@@ -600,17 +635,24 @@ class _QuickAmountButton extends StatelessWidget {
   }
 }
 
+/// Widget auxiliar para exibir estado vazio de forma amigável
+/// Utilizado quando não há tokens comprados, histórico, ou ocorreu erro
 class _EmptyStateCard extends StatelessWidget {
+  /// Ícone a ser exibido
   final IconData icon;
+  /// Título da mensagem
   final String title;
+  /// Descrição adicional
   final String description;
 
+  /// Construtor do card de estado vazio
   const _EmptyStateCard({
     required this.icon,
     required this.title,
     required this.description,
   });
 
+  /// Constrói o card com ícone, título e descrição em layout centralizado
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -654,12 +696,19 @@ class _EmptyStateCard extends StatelessWidget {
   }
 }
 
+/// Widget que exibe uma transação/movimentação no histórico
+/// Mostra informações da movimentação como tipo, data e valor
 class _TransactionCard extends StatelessWidget {
+  /// Título da transação (ex: "Adição de saldo simulado")
   final String title;
+  /// Subtítulo/tipo da transação (ex: "Crédito interno")
   final String subtitle;
+  /// Valor da transação formatado em moeda
   final String value;
+  /// Data da transação formatada
   final String date;
 
+  /// Construtor do card de transação
   const _TransactionCard({
     required this.title,
     required this.subtitle,
@@ -667,6 +716,8 @@ class _TransactionCard extends StatelessWidget {
     required this.date,
   });
 
+  /// Retorna o ícone apropriado baseado no tipo de transação
+  /// Crédito interno usa ícone de cartão, outros usam ícone de recibo
   IconData get _icon {
     if (subtitle.contains('Crédito')) {
       return Icons.add_card_rounded;
@@ -675,6 +726,7 @@ class _TransactionCard extends StatelessWidget {
     return Icons.receipt_long_rounded;
   }
 
+  /// Constrói o card de transação com ícone, informações e data
   @override
   Widget build(BuildContext context) {
     return Container(

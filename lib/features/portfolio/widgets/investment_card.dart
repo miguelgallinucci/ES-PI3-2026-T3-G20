@@ -1,14 +1,32 @@
+/// Widget Card de Investimento
+/// 
+/// Exibe as informações de um investimento individual em formato de card,
+/// incluindo:
+/// - Nome e setor do investimento
+/// - Valor investido e valor atual
+/// - Performance/retorno do investimento
+/// - Indicação visual se a performance é positiva ou negativa
+
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
+/// Widget que exibe as informações de um investimento em formato de card
 class InvestmentCard extends StatelessWidget {
+  /// Nome do investimento/ativo
   final String name;
+  /// Setor de atuação do investimento
   final String sector;
+  /// Valor investido inicialmente (formatado em moeda)
   final String amountInvested;
+  /// Valor atual do investimento (formatado em moeda)
   final String currentValue;
+  /// Texto de performance/retorno (ex: "+5.2%")
   final String performance;
+  /// Indica se a performance é positiva (true) ou negativa (false)
   final bool isPositive;
 
+  /// Construtor do card de investimento
+  /// Todos os parâmetros são obrigatórios
   const InvestmentCard({
     super.key,
     required this.name,
@@ -19,6 +37,10 @@ class InvestmentCard extends StatelessWidget {
     required this.isPositive,
   });
 
+  /// Constrói a interface do card com layout em coluna
+  /// Exibe seção superior com setor e performance
+  /// E seção inferior com nome do investimento
+  /// E seção de valores com investido e valor atual
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -96,15 +118,22 @@ class InvestmentCard extends StatelessWidget {
   }
 }
 
+/// Widget auxiliar para exibir um item de informação (label + valor)
+/// Utilizado para mostrar valores de investido e valor atual
 class _InfoItem extends StatelessWidget {
+  /// Rótulo/label da informação (ex: "Investido")
   final String label;
+  /// Valor a ser exibido (formatado)
   final String value;
 
+  /// Construtor com parâmetros obrigatórios
   const _InfoItem({
     required this.label,
     required this.value,
   });
 
+  /// Constrói o widget com label acima do valor
+  /// Layout em coluna com espaçamento e estilos apropriados
   @override
   Widget build(BuildContext context) {
     return Container(
