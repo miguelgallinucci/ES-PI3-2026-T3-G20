@@ -509,32 +509,57 @@ class _PortfolioPageState extends State<PortfolioPage> {
                               children: transactions.map((transactionDoc) {
                                 final data = transactionDoc.data();
 
-                                final type = data['type'] ?? data['tipo'] ?? '';
+                                final type = (data['type'] ?? data['tipo'] ?? '').toString().toLowerCase();
+
+                                final startupName = data['startupName'] ??
+                                    data['nomeStartup'] ??
+                                    data['startup'] ??
+                                    '';
 
                                 final title = data['title'] ??
                                     data['descricao'] ??
-                                    (type == 'aporte_simulado' ? 'Adição de saldo' : 'Movimentação');
+                                    data['description'] ??
+                                    (type == 'aporte_simulado'
+                                        ? 'Adição de saldo'
+                                        : type == 'compra'
+                                            ? 'Compra de tokens'
+                                            : type == 'venda'
+                                                ? 'Venda de tokens'
+                                                : 'Movimentação');
 
                                 final description = data['description'] ??
+                                    data['subtitle'] ??
                                     (type == 'aporte_simulado'
                                         ? 'Crédito interno'
-                                        : data['startupName'] ?? 'Movimentação');
+                                        : startupName.toString().isNotEmpty
+                                            ? startupName
+                                            : 'Movimentação');
 
-                                final rawAmount = data['amount'] ?? data['valorTotal'] ?? 0;
+                                final rawAmount = data['amount'] ??
+                                    data['valorTotal'] ??
+                                    data['totalValue'] ??
+                                    data['valor'] ??
+                                    0;
+
                                 final amount = rawAmount is num ? rawAmount.toDouble() : 0.0;
 
                                 final createdAt = data['createdAt'] as Timestamp?;
 
-                                final isCredit = type == 'aporte_simulado' ||
+                                final bool isSale =
+                                    type == 'venda' ||
+                                    type == 'venda_token';
+
+                                final bool isCredit =
+                                    type == 'aporte_simulado' ||
                                     type == 'credito' ||
-                                    amount > 0;
+                                    isSale;
 
                                 return _TransactionCard(
                                   title: title.toString().replaceAll('simulado', '').trim(),
                                   subtitle: description.toString().replaceAll('simulado', '').trim(),
                                   value: isCredit
-                                      ? _formatCurrency(amount)
-                                      : _formatNegativeCurrency(amount),
+                                      ? _formatCurrency(amount.abs())
+                                      : _formatNegativeCurrency(amount.abs()),
                                   date: _formatDate(createdAt),
                                   isCredit: isCredit,
                                 );
