@@ -1,4 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
 import '../../../core/theme/app_colors.dart';
 import 'catalog_page.dart';
 import '../../portfolio/pages/portfolio_page.dart';
@@ -24,6 +27,10 @@ class InvestmentPage extends StatefulWidget {
 class _InvestmentPageState extends State<InvestmentPage> {
   final TextEditingController quantityController = TextEditingController();
 
+  double _saldoDisponivel = 0;
+  bool _isLoadingSaldo = true;
+  bool _isConfirming = false;
+
   double get tokenPriceValue =>
       double.tryParse(
         widget.tokenPrice
@@ -38,14 +45,185 @@ class _InvestmentPageState extends State<InvestmentPage> {
 
   double get totalValue => quantity * tokenPriceValue;
 
+  bool get hasEnoughBalance => totalValue <= _saldoDisponivel;
+
+  bool get canConfirm =>
+      !_isLoadingSaldo &&
+          !_isConfirming &&
+          quantity > 0 &&
+          tokenPriceValue > 0 &&
+          hasEnoughBalance;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSaldoDisponivel();
+  }
+
   @override
   void dispose() {
     quantityController.dispose();
     super.dispose();
   }
 
+  Future<void> _loadSaldoDisponivel() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid == null) {
+      if (!mounted) return;
+
+      setState(() {
+        _saldoDisponivel = 0;
+        _isLoadingSaldo = false;
+      });
+
+      return;
+    }
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      final data = userDoc.data();
+
+      if (!mounted) return;
+
+      setState(() {
+        _saldoDisponivel = _toDouble(data?['saldoFicticio']);
+        _isLoadingSaldo = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _saldoDisponivel = 0;
+        _isLoadingSaldo = false;
+      });
+
+      _showMessage('Não foi possível carregar o saldo da carteira.');
+    }
+  }
+
+  double _toDouble(dynamic value) {
+    if (value == null) return 0;
+
+    if (value is int) return value.toDouble();
+
+    if (value is double) return value;
+
+    if (value is num) return value.toDouble();
+
+    if (value is String) {
+      return double.tryParse(
+        value
+            .replaceAll('R\$', '')
+            .replaceAll(' ', '')
+            .replaceAll('.', '')
+            .replaceAll(',', '.'),
+      ) ??
+          0;
+    }
+
+    return 0;
+  }
+
+  Future<void> _confirmInvestment() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+
+    if (uid == null) {
+      _showMessage('Você precisa estar logado para investir.');
+      return;
+    }
+
+    if (quantity <= 0) {
+      _showMessage('Informe uma quantidade válida de tokens.');
+      return;
+    }
+
+    if (totalValue > _saldoDisponivel) {
+      _showMessage('Saldo insuficiente para realizar esse investimento.');
+      return;
+    }
+
+    setState(() {
+      _isConfirming = true;
+    });
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final userRef = firestore.collection('users').doc(uid);
+
+      await firestore.runTransaction((transaction) async {
+        final userSnapshot = await transaction.get(userRef);
+        final userData = userSnapshot.data();
+
+        final saldoAtual = _toDouble(userData?['saldoFicticio']);
+
+        if (totalValue > saldoAtual) {
+          throw Exception('saldo_insuficiente');
+        }
+
+        final novoSaldo = saldoAtual - totalValue;
+
+        transaction.update(userRef, {
+          'saldoFicticio': novoSaldo,
+        });
+
+        final transactionRef = firestore.collection('transactions').doc();
+
+        transaction.set(transactionRef, {
+          'userId': uid,
+          'startupName': widget.startupName,
+          'sector': widget.sector,
+          'type': 'compra',
+          'quantity': quantity,
+          'tokenPrice': tokenPriceValue,
+          'totalValue': totalValue,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      });
+
+      if (!mounted) return;
+
+      setState(() {
+        _saldoDisponivel -= totalValue;
+      });
+
+      _showSuccessDialog(context);
+    } catch (error) {
+      if (!mounted) return;
+
+      if (error.toString().contains('saldo_insuficiente')) {
+        _showMessage('Saldo insuficiente para realizar esse investimento.');
+      } else {
+        _showMessage('Não foi possível confirmar o investimento.');
+      }
+    } finally {
+      if (!mounted) return;
+
+      setState(() {
+        _isConfirming = false;
+      });
+    }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF102235),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool shouldShowInsufficientBalance =
+        quantity > 0 && totalValue > _saldoDisponivel && !_isLoadingSaldo;
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -113,7 +291,9 @@ class _InvestmentPageState extends State<InvestmentPage> {
                                   vertical: 7,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                  color: AppColors.primary.withValues(
+                                    alpha: 0.12,
+                                  ),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
@@ -140,7 +320,9 @@ class _InvestmentPageState extends State<InvestmentPage> {
                               Expanded(
                                 child: _InfoCard(
                                   label: 'Saldo disponível',
-                                  value: widget.availableBalance,
+                                  value: _isLoadingSaldo
+                                      ? 'Carregando...'
+                                      : _formatCurrency(_saldoDisponivel),
                                 ),
                               ),
                             ],
@@ -191,6 +373,16 @@ class _InvestmentPageState extends State<InvestmentPage> {
                             ),
                             style: const TextStyle(color: Colors.white),
                           ),
+                          if (shouldShowInsufficientBalance) ...[
+                            const Text(
+                              'Saldo insuficiente para realizar esse investimento.',
+                              style: TextStyle(
+                                color: AppColors.primaryLight,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 24),
                           Container(
                             width: double.infinity,
@@ -236,11 +428,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
                             width: double.infinity,
                             height: 54,
                             child: ElevatedButton(
-                              onPressed: quantity <= 0
-                                  ? null
-                                  : () {
-                                _showSuccessDialog(context);
-                              },
+                              onPressed: canConfirm ? _confirmInvestment : null,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
@@ -250,9 +438,11 @@ class _InvestmentPageState extends State<InvestmentPage> {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                               ),
-                              child: const Text(
-                                'Confirmar investimento',
-                                style: TextStyle(
+                              child: Text(
+                                _isConfirming
+                                    ? 'Confirmando...'
+                                    : 'Confirmar investimento',
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
                                 ),
