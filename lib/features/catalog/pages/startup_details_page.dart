@@ -396,21 +396,22 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
                       description: widget.startup.description,
                     ),
                     const SizedBox(height: 22),
-                    _TokenOverviewCard(
-                      currentPrice: currentPrice,
-                      variation: variation,
-                      isPositive: isPositive,
-                      chartValues: chartValues,
-                      chartLabels: chartLabels,
-                      subtitle: _selectedChartSubtitle,
-                      selectedPeriod: _selectedPeriod,
-                      onPeriodChanged: (period) {
-                        setState(() {
-                          _selectedPeriod = period;
-                        });
-                      },
+
+                    _SectionCard(
+                      title: 'Sobre o projeto',
+                      subtitle: 'Resumo da proposta da startup',
+                      child: Text(
+                        widget.startup.aboutText,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 15,
+                          height: 1.6,
+                        ),
+                      ),
                     ),
+
                     const SizedBox(height: 18),
+
                     Row(
                       children: [
                         Expanded(
@@ -430,7 +431,7 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
@@ -452,18 +453,22 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 18),
-                    _SectionCard(
-                      title: 'Sobre o projeto',
-                      subtitle: 'Resumo da proposta da startup',
-                      child: Text(
-                        widget.startup.aboutText,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 15,
-                          height: 1.6,
-                        ),
-                      ),
+
+                    _TokenOverviewCard(
+                      currentPrice: currentPrice,
+                      variation: variation,
+                      isPositive: isPositive,
+                      chartValues: chartValues,
+                      chartLabels: chartLabels,
+                      subtitle: _selectedChartSubtitle,
+                      selectedPeriod: _selectedPeriod,
+                      onPeriodChanged: (period) {
+                        setState(() {
+                          _selectedPeriod = period;
+                        });
+                      },
                     ),
                     const SizedBox(height: 18),
                     _SectionCard(
@@ -648,17 +653,24 @@ class _Header extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Badge(
-              text: sector,
-              icon: Icons.business_center_rounded,
-              highlighted: true,
-            ),
-            const SizedBox(width: 10),
             Expanded(
-              child: _Badge(
-                text: stage,
-                icon: Icons.trending_up_rounded,
+              child: Wrap(
+                spacing: 18,
+                runSpacing: 8,
+                children: [
+                  _SimpleHeaderTag(
+                    text: sector,
+                    icon: Icons.work_rounded,
+                    highlighted: true,
+                  ),
+                  _SimpleHeaderTag(
+                    text: stage,
+                    icon: Icons.show_chart_rounded,
+                    highlighted: false,
+                  ),
+                ],
               ),
             ),
           ],
@@ -687,12 +699,12 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _Badge extends StatelessWidget {
+class _SimpleHeaderTag extends StatelessWidget {
   final String text;
   final IconData icon;
   final bool highlighted;
 
-  const _Badge({
+  const _SimpleHeaderTag({
     required this.text,
     required this.icon,
     this.highlighted = false,
@@ -700,45 +712,33 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 8,
-      ),
-      decoration: BoxDecoration(
-        color: highlighted
-            ? AppColors.primary.withValues(alpha: 0.13)
-            : Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
+    if (text.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: 16,
           color: highlighted
-              ? AppColors.primary.withValues(alpha: 0.4)
-              : AppColors.border,
+              ? AppColors.primaryLight
+              : AppColors.textSecondary,
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: 15,
-            color: highlighted ? AppColors.primaryLight : AppColors.textSecondary,
+        const SizedBox(width: 6),
+        Text(
+          text,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: highlighted
+                ? AppColors.primaryLight
+                : AppColors.textSecondary,
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
           ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(
-              text,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color:
-                highlighted ? AppColors.primaryLight : AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -1246,10 +1246,10 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 112),
+    return SizedBox(
+      height: 118,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(24),
@@ -1258,29 +1258,62 @@ class _InfoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (icon != null) ...[
-              Icon(
-                icon,
-                color:
-                highlight ? AppColors.primaryLight : AppColors.textSecondary,
-                size: 21,
-              ),
-              const SizedBox(height: 10),
-            ],
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
+            SizedBox(
+              height: 36,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (icon != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: Icon(
+                        icon,
+                        color: highlight
+                            ? AppColors.primaryLight
+                            : AppColors.textSecondary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        height: 1.15,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                color: highlight ? AppColors.primaryLight : Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            const SizedBox(height: 10),
+            Expanded(
+              child: SizedBox(
+                height: 34,
+                width: double.infinity,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      value,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: highlight ? AppColors.primaryLight : Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        height: 1,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
