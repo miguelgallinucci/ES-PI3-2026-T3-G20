@@ -175,12 +175,18 @@ class _InvestmentPageState extends State<InvestmentPage> {
 
         transaction.set(transactionRef, {
           'userId': uid,
+
+          'type': 'compra',
+          'title': 'Compra de tokens',
+          'description': '${widget.startupName} • $quantity token(s)',
+
           'startupName': widget.startupName,
           'sector': widget.sector,
-          'type': 'compra',
           'quantity': quantity,
           'tokenPrice': tokenPriceValue,
           'totalValue': totalValue,
+          'amount': -totalValue,
+
           'createdAt': FieldValue.serverTimestamp(),
         });
       });
@@ -201,11 +207,11 @@ class _InvestmentPageState extends State<InvestmentPage> {
         _showMessage('Não foi possível confirmar o investimento.');
       }
     } finally {
-      if (!mounted) return;
-
-      setState(() {
-        _isConfirming = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isConfirming = false;
+        });
+      }
     }
   }
 
@@ -374,6 +380,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
                             style: const TextStyle(color: Colors.white),
                           ),
                           if (shouldShowInsufficientBalance) ...[
+                            const SizedBox(height: 10),
                             const Text(
                               'Saldo insuficiente para realizar esse investimento.',
                               style: TextStyle(

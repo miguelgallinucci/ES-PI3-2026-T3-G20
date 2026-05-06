@@ -1,4 +1,4 @@
-/// Página de Portfólio (Carteira)
+// Página de Portfólio (Carteira)
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -56,6 +56,11 @@ class _PortfolioPageState extends State<PortfolioPage> {
   /// Exemplo: 1000.50 -> R$ 1000,50
   String _formatCurrency(double value) {
     return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
+  }
+
+  String _formatNegativeCurrency(double value) {
+    final positiveValue = value.abs();
+    return '-R\$ ${positiveValue.toStringAsFixed(2).replaceAll('.', ',')}';
   }
 
   /// Formata uma data do Firestore para o padrão brasileiro (DD/MM/YYYY)
@@ -504,24 +509,34 @@ class _PortfolioPageState extends State<PortfolioPage> {
                               children: transactions.map((transactionDoc) {
                                 final data = transactionDoc.data();
 
-                                final description =
-                                    (data['descricao'] ?? 'Movimentação').replaceAll('simulado', '');
-                                final type = data['tipo'] ?? '';
+                                final type = data['type'] ?? data['tipo'] ?? '';
 
-                                final rawTotal = data['valorTotal'] ?? 0;
-                                final total =
-                                rawTotal is num ? rawTotal.toDouble() : 0.0;
+                                final title = data['title'] ??
+                                    data['descricao'] ??
+                                    (type == 'aporte_simulado' ? 'Adição de saldo' : 'Movimentação');
 
-                                final createdAt =
-                                data['createdAt'] as Timestamp?;
+                                final description = data['description'] ??
+                                    (type == 'aporte_simulado'
+                                        ? 'Crédito interno'
+                                        : data['startupName'] ?? 'Movimentação');
+
+                                final rawAmount = data['amount'] ?? data['valorTotal'] ?? 0;
+                                final amount = rawAmount is num ? rawAmount.toDouble() : 0.0;
+
+                                final createdAt = data['createdAt'] as Timestamp?;
+
+                                final isCredit = type == 'aporte_simulado' ||
+                                    type == 'credito' ||
+                                    amount > 0;
 
                                 return _TransactionCard(
-                                  title: description.toString(),
-                                  subtitle: type == 'aporte_simulado'
-                                      ? 'Crédito interno'
-                                      : 'Movimentação',
-                                  value: _formatCurrency(total),
+                                  title: title.toString().replaceAll('simulado', '').trim(),
+                                  subtitle: description.toString().replaceAll('simulado', '').trim(),
+                                  value: isCredit
+                                      ? _formatCurrency(amount)
+                                      : _formatNegativeCurrency(amount),
                                   date: _formatDate(createdAt),
+                                  isCredit: isCredit,
                                 );
                               }).toList(),
                             );
@@ -707,6 +722,8 @@ class _TransactionCard extends StatelessWidget {
   final String value;
   /// Data da transação formatada
   final String date;
+  /// Indica se a transação é de crédito ou débito
+  final bool isCredit;
 
   /// Construtor do card de transação
   const _TransactionCard({
@@ -714,12 +731,13 @@ class _TransactionCard extends StatelessWidget {
     required this.subtitle,
     required this.value,
     required this.date,
+    required this.isCredit,
   });
 
   /// Retorna o ícone apropriado baseado no tipo de transação
   /// Crédito interno usa ícone de cartão, outros usam ícone de recibo
   IconData get _icon {
-    if (subtitle.contains('Crédito')) {
+    if (isCredit) {
       return Icons.add_card_rounded;
     }
 
@@ -778,8 +796,8 @@ class _TransactionCard extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             value,
-            style: const TextStyle(
-              color: AppColors.primaryLight,
+            style: TextStyle(
+              color: isCredit ? AppColors.primaryLight : AppColors.primary,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
