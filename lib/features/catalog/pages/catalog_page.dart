@@ -611,20 +611,11 @@ class _CatalogPageState extends State<CatalogPage> {
   }
 
   void _openDetails(BuildContext context, StartupModel startup) {
-    final displaySector = startup.categories.isNotEmpty
-        ? startup.categories.join(' / ')
-        : startup.sector;
-
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => StartupDetailsPage(
-          name: startup.name,
-          sector: displaySector,
-          stage: startup.stage,
-          description: startup.description,
-          capital: startup.capital,
-          tokens: startup.tokens,
+          startup: startup,
         ),
       ),
     );

@@ -1,5 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../data/startup_questions_service.dart';
+import '../models/startup_model.dart';
 import 'investment_page.dart';
 
 enum ChartPeriod {
@@ -11,12 +14,7 @@ enum ChartPeriod {
 }
 
 class StartupDetailsPage extends StatefulWidget {
-  final String name;
-  final String sector;
-  final String stage;
-  final String description;
-  final String capital;
-  final String tokens;
+  final StartupModel startup;
 
   final List<double>? chartValues;
   final List<StartupSocietyMember>? societyMembers;
@@ -26,12 +24,7 @@ class StartupDetailsPage extends StatefulWidget {
 
   const StartupDetailsPage({
     super.key,
-    required this.name,
-    required this.sector,
-    required this.stage,
-    required this.description,
-    required this.capital,
-    required this.tokens,
+    required this.startup,
     this.chartValues,
     this.societyMembers,
     this.mentors,
@@ -45,80 +38,71 @@ class StartupDetailsPage extends StatefulWidget {
 
 class _StartupDetailsPageState extends State<StartupDetailsPage> {
   final TextEditingController _questionController = TextEditingController();
+  final StartupQuestionsService _questionsService = StartupQuestionsService();
 
   ChartPeriod _selectedPeriod = ChartPeriod.sixMonths;
 
-  late final List<StartupSocietyMember> _societyMembers;
+  late List<StartupSocietyMember> _societyMembers;
   late final List<StartupSocietyMember> _mentors;
   late final List<StartupDocumentItem> _documents;
-  late List<StartupQuestion> _questions;
 
   @override
   void initState() {
     super.initState();
 
     _societyMembers = widget.societyMembers ??
-        const [
-          StartupSocietyMember(
-            name: 'Ana Martins',
-            role: 'CEO',
-            percentage: '45%',
-          ),
-          StartupSocietyMember(
-            name: 'Lucas Ferreira',
-            role: 'CTO',
-            percentage: '35%',
-          ),
-          StartupSocietyMember(
-            name: 'Marina Souza',
-            role: 'COO',
-            percentage: '20%',
-          ),
-        ];
+        widget.startup.equityList.map((item) {
+          final percentageMatch = RegExp(r'\((.*?)\)').firstMatch(item);
+          final percentage = percentageMatch?.group(1);
+
+          final name = item.replaceAll(RegExp(r'\s*\(.*?\)'), '').trim();
+
+          return StartupSocietyMember(
+            name: name.isEmpty ? item : name,
+            role: 'Sócio fundador',
+            percentage: percentage,
+          );
+        }).toList();
+
+    if (_societyMembers.isEmpty && widget.startup.partnersList.isNotEmpty) {
+      _societyMembers = widget.startup.partnersList.map((partner) {
+        return StartupSocietyMember(
+          name: partner,
+          role: 'Sócio fundador',
+        );
+      }).toList();
+    }
 
     _mentors = widget.mentors ??
-        const [
-          StartupSocietyMember(
-            name: 'Carlos Almeida',
-            role: 'Mentor em Estratégia',
-          ),
-          StartupSocietyMember(
-            name: 'Fernanda Lima',
-            role: 'Conselho Consultivo',
-          ),
-        ];
-
-    _questions = List<StartupQuestion>.from(
-      widget.questions ??
-          const [
-            StartupQuestion(
-              question: 'Qual o principal diferencial da startup?',
-              answer:
-              'O diferencial está na integração entre tecnologia, escalabilidade e foco em eficiência operacional.',
-            ),
-            StartupQuestion(
-              question: 'Em que estágio a operação se encontra?',
-              answer:
-              'A startup já possui operação estruturada e está em fase de crescimento dentro do ecossistema.',
-            ),
-          ],
-    );
+        widget.startup.mentorsList.map((mentor) {
+          return StartupSocietyMember(
+            name: mentor,
+            role: 'Mentor / Conselho',
+          );
+        }).toList();
 
     _documents = widget.documents ??
-        const [
+        [
           StartupDocumentItem(
             title: 'Sumário executivo',
-            description: 'Resumo da proposta, mercado e modelo de negócio.',
+            description: widget.startup.executiveSummary.trim().isNotEmpty
+                ? widget.startup.executiveSummary
+                : 'Sumário executivo ainda não cadastrado.',
             icon: Icons.description_rounded,
           ),
           StartupDocumentItem(
             title: 'Plano de negócios',
-            description: 'Estratégia, projeções e visão de crescimento.',
+            description: widget.startup.businessPlanUrl.trim().isNotEmpty
+                ? 'Documento disponível para consulta.'
+                : 'Plano de negócios ainda não cadastrado.',
             icon: Icons.insert_chart_rounded,
+            url: widget.startup.businessPlanUrl,
           ),
           StartupDocumentItem(
             title: 'Apresentação dos sócios',
-            description: 'Equipe fundadora e funções principais.',
+            description: widget.startup.partners.trim().isNotEmpty
+                ? widget.startup.partners
+                : 'Apresentação dos sócios ainda não cadastrada.',
             icon: Icons.groups_rounded,
           ),
         ];
@@ -280,7 +264,7 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
     }
   }
 
-  void _handleSendQuestion() {
+  Future<void> _handleSendQuestion() async {
     final text = _questionController.text.trim();
 
     if (text.isEmpty) {
@@ -292,54 +276,44 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
       return;
     }
 
-    setState(() {
-      _questions.insert(
-        0,
-        StartupQuestion(
-          question: text,
-          answer: null,
-          createdAt: DateTime.now(),
+    try {
+      await _questionsService.sendQuestion(
+        startupId: widget.startup.id,
+        startupName: widget.startup.name,
+        question: text,
+      );
+
+      _questionController.clear();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pergunta enviada. Ela ficará aguardando resposta.'),
         ),
       );
-      _questionController.clear();
-    });
+    } catch (error) {
+      if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Pergunta enviada. Ela ficará aguardando resposta.'),
-      ),
-    );
-
-    /*
-      FIRESTORE DEPOIS:
-
-      FirebaseFirestore.instance
-          .collection('startups')
-          .doc(startupId)
-          .collection('questions')
-          .add({
-            'question': text,
-            'answer': null,
-            'createdAt': FieldValue.serverTimestamp(),
-            'isPublic': true,
-            'userId': currentUser.uid,
-          });
-
-      Depois vamos precisar adicionar:
-      import 'package:cloud_firestore/cloud_firestore.dart';
-    */
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao enviar pergunta: $error'),
+        ),
+      );
+    }
   }
 
   void _goToInvestmentPage(double currentPrice) {
-    final tokenPrice =
-        'R\$ ${currentPrice.toStringAsFixed(2).replaceAll('.', ',')}';
+    final tokenPrice = widget.startup.tokenPriceText != '-'
+        ? widget.startup.tokenPriceText
+        : 'R\$ ${currentPrice.toStringAsFixed(2).replaceAll('.', ',')}';
 
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => InvestmentPage(
-          startupName: widget.name,
-          sector: widget.sector,
+          startupName: widget.startup.name,
+          sector: widget.startup.displaySector,
           tokenPrice: tokenPrice,
           availableBalance: 'R\$ 5.000,00',
         ),
@@ -352,7 +326,7 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
     final chartValues = _selectedChartValues;
     final chartLabels = _selectedChartLabels;
 
-    final currentPrice = chartValues.last;
+    final currentPrice = widget.startup.tokenPrice?.toDouble() ?? chartValues.last;
     final firstPrice = chartValues.first;
     final variation = ((currentPrice - firstPrice) / firstPrice) * 100;
     final isPositive = variation >= 0;
@@ -416,10 +390,10 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _Header(
-                      name: widget.name,
-                      sector: widget.sector,
-                      stage: widget.stage,
-                      description: widget.description,
+                      name: widget.startup.name,
+                      sector: widget.startup.displaySector,
+                      stage: widget.startup.stage,
+                      description: widget.startup.description,
                     ),
                     const SizedBox(height: 22),
                     _TokenOverviewCard(
@@ -442,7 +416,7 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
                         Expanded(
                           child: _InfoCard(
                             label: 'Capital aportado',
-                            value: widget.capital,
+                            value: widget.startup.capital,
                             icon: Icons.account_balance_wallet_rounded,
                           ),
                         ),
@@ -450,8 +424,30 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
                         Expanded(
                           child: _InfoCard(
                             label: 'Tokens emitidos',
-                            value: widget.tokens,
+                            value: widget.startup.tokens,
                             icon: Icons.generating_tokens_rounded,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _InfoCard(
+                            label: 'Tokens disponíveis',
+                            value: widget.startup.availableTokensText,
+                            icon: Icons.confirmation_number_rounded,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _InfoCard(
+                            label: 'Status',
+                            value: widget.startup.status.trim().isNotEmpty
+                                ? widget.startup.status
+                                : widget.startup.stage,
+                            icon: Icons.verified_rounded,
                           ),
                         ),
                       ],
@@ -461,8 +457,7 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
                       title: 'Sobre o projeto',
                       subtitle: 'Resumo da proposta da startup',
                       child: Text(
-                        'A ${widget.name} atua no setor de ${widget.sector.toLowerCase()} e está classificada como ${widget.stage.toLowerCase()}. '
-                            'O projeto busca solucionar uma dor real do mercado com uma solução escalável, tecnológica e com potencial de crescimento no ecossistema MesclaInvest.',
+                        widget.startup.aboutText,
                         style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 15,
@@ -513,10 +508,57 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
                       ),
                     ),
                     const SizedBox(height: 18),
-                    _QuestionsSection(
-                      controller: _questionController,
-                      questions: _questions,
-                      onSend: _handleSendQuestion,
+                    StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                      stream: _questionsService.watchQuestions(
+                        startupId: widget.startup.id,
+                      ),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return _SectionCard(
+                            title: 'Perguntas públicas',
+                            subtitle: 'Dúvidas dos usuários e respostas da startup',
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.primaryLight,
+                              ),
+                            ),
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          return _SectionCard(
+                            title: 'Perguntas públicas',
+                            subtitle: 'Dúvidas dos usuários e respostas da startup',
+                            child: Text(
+                              'Não foi possível carregar as perguntas desta startup.\n\nErro: ${snapshot.error}',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                                height: 1.5,
+                              ),
+                            ),
+                          );
+                        }
+
+                        final docs = snapshot.data?.docs ?? [];
+
+                        final questions = docs.map((doc) {
+                          return StartupQuestion.fromMap(doc.data());
+                        }).toList();
+
+                        questions.sort((a, b) {
+                          final dateA = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+                          final dateB = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+
+                          return dateB.compareTo(dateA);
+                        });
+
+                        return _QuestionsSection(
+                          controller: _questionController,
+                          questions: questions,
+                          onSend: _handleSendQuestion,
+                        );
+                      },
                     ),
                     const SizedBox(height: 18),
                     _SectionCard(
@@ -530,27 +572,32 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
                           borderRadius: BorderRadius.circular(22),
                           border: Border.all(color: AppColors.border),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.play_circle_fill_rounded,
                                 color: AppColors.primaryLight,
                                 size: 52,
                               ),
-                              SizedBox(height: 10),
+                              const SizedBox(height: 10),
                               Text(
-                                'Área reservada para vídeo',
-                                style: TextStyle(
+                                widget.startup.demoVideoUrl.trim().isNotEmpty
+                                    ? 'Vídeo demonstrativo disponível'
+                                    : 'Área reservada para vídeo',
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              SizedBox(height: 4),
+                              const SizedBox(height: 4),
                               Text(
-                                'Demonstração ou pitch da startup',
-                                style: TextStyle(
+                                widget.startup.demoVideoUrl.trim().isNotEmpty
+                                    ? widget.startup.demoVideoUrl
+                                    : 'Demonstração ou pitch da startup',
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 13,
                                 ),
@@ -1568,10 +1615,20 @@ class StartupQuestion {
   });
 
   factory StartupQuestion.fromMap(Map<String, dynamic> map) {
+    DateTime? parsedDate;
+
+    final createdAt = map['createdAt'];
+
+    if (createdAt is Timestamp) {
+      parsedDate = createdAt.toDate();
+    } else if (createdAt is DateTime) {
+      parsedDate = createdAt;
+    }
+
     return StartupQuestion(
-      question: map['question'] ?? '',
-      answer: map['answer'],
-      createdAt: map['createdAt'] is DateTime ? map['createdAt'] : null,
+      question: map['question']?.toString() ?? '',
+      answer: map['answer']?.toString(),
+      createdAt: parsedDate,
     );
   }
 
