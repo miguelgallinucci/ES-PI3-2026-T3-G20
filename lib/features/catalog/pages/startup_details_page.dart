@@ -117,81 +117,109 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
   List<double> get _selectedChartValues {
     switch (_selectedPeriod) {
       case ChartPeriod.day:
-        return const [
-          12.0,
-          12.1,
-          11.9,
-          12.2,
-          12.15,
-          12.3,
-          12.4,
-          12.5,
-        ];
+        return _scaleValuesToCurrentPrice(
+          const [
+            0.96,
+            0.98,
+            0.97,
+            1.01,
+            0.99,
+            1.03,
+            1.00,
+          ],
+        );
 
       case ChartPeriod.week:
-        return const [
-          11.2,
-          11.5,
-          11.4,
-          11.9,
-          12.1,
-          12.3,
-          12.5,
-        ];
+        return _scaleValuesToCurrentPrice(
+          const [
+            0.93,
+            0.95,
+            0.94,
+            0.97,
+            0.98,
+            1.01,
+            1.00,
+          ],
+        );
 
       case ChartPeriod.month:
-        return const [
-          10.6,
-          10.8,
-          11.0,
-          11.3,
-          11.6,
-          11.9,
-          12.2,
-          12.5,
-        ];
+        return _scaleValuesToCurrentPrice(
+          const [
+            0.86,
+            0.88,
+            0.91,
+            0.93,
+            0.96,
+            0.97,
+            0.99,
+            1.00,
+          ],
+        );
 
       case ChartPeriod.sixMonths:
-        return widget.chartValues ??
-            const [
-              8.2,
-              8.9,
-              8.6,
-              9.4,
-              10.8,
-              12.5,
-            ];
+        return _scaleValuesToCurrentPrice(
+          widget.chartValues ??
+              const [
+                0.72,
+                0.78,
+                0.75,
+                0.84,
+                0.92,
+                1.00,
+              ],
+        );
 
       case ChartPeriod.year:
-        return const [
-          7.8,
-          8.1,
-          8.4,
-          8.9,
-          9.3,
-          9.8,
-          10.2,
-          10.7,
-          11.1,
-          11.6,
-          12.0,
-          12.5,
-        ];
+        return _scaleValuesToCurrentPrice(
+          const [
+            0.62,
+            0.65,
+            0.67,
+            0.71,
+            0.74,
+            0.78,
+            0.82,
+            0.86,
+            0.89,
+            0.93,
+            0.96,
+            1.00,
+          ],
+        );
     }
+  }
+
+  List<double> _scaleValuesToCurrentPrice(List<double> values) {
+    if (values.isEmpty) return values;
+
+    final currentPrice = widget.startup.tokenPrice?.toDouble();
+
+    if (currentPrice == null || currentPrice <= 0) {
+      return values;
+    }
+
+    final lastValue = values.last;
+
+    if (lastValue <= 0) {
+      return values;
+    }
+
+    final scale = currentPrice / lastValue;
+
+    return values.map((value) => value * scale).toList();
   }
 
   List<String> get _selectedChartLabels {
     switch (_selectedPeriod) {
       case ChartPeriod.day:
         return const [
-          '8h',
-          '10h',
+          '00h',
+          '04h',
+          '08h',
           '12h',
-          '14h',
           '16h',
-          '18h',
           '20h',
-          '22h',
+          '24h',
         ];
 
       case ChartPeriod.week:
@@ -207,13 +235,13 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
 
       case ChartPeriod.month:
         return const [
-          'S1',
-          'S2',
-          'S3',
-          'S4',
-          'S5',
-          'S6',
-          'S7',
+          '1',
+          '5',
+          '10',
+          '15',
+          '20',
+          '25',
+          '30',
           'Hoje',
         ];
 
@@ -326,7 +354,7 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
     final chartValues = _selectedChartValues;
     final chartLabels = _selectedChartLabels;
 
-    final currentPrice = widget.startup.tokenPrice?.toDouble() ?? chartValues.last;
+    final currentPrice = chartValues.last;
     final firstPrice = chartValues.first;
     final variation = ((currentPrice - firstPrice) / firstPrice) * 100;
     final isPositive = variation >= 0;
@@ -1055,7 +1083,7 @@ class _QuestionsSection extends StatelessWidget {
   }
 }
 
-class _StartupLineChart extends StatelessWidget {
+class _StartupLineChart extends StatefulWidget {
   final List<double> values;
   final List<String> labels;
 
@@ -1065,13 +1093,69 @@ class _StartupLineChart extends StatelessWidget {
   });
 
   @override
+  State<_StartupLineChart> createState() => _StartupLineChartState();
+}
+
+class _StartupLineChartState extends State<_StartupLineChart> {
+  int? _selectedIndex;
+
+  @override
+  void didUpdateWidget(covariant _StartupLineChart oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.values != widget.values || oldWidget.labels != widget.labels) {
+      _selectedIndex = null;
+    }
+  }
+
+  void _selectNearestPoint(Offset localPosition, double width) {
+    final itemCount = widget.values.length < widget.labels.length
+        ? widget.values.length
+        : widget.labels.length;
+
+    if (itemCount == 0) return;
+
+    const leftPadding = 64.0;
+    const rightPadding = 22.0;
+    final availableWidth = width - leftPadding - rightPadding;
+
+    if (availableWidth <= 0) return;
+
+    final rawIndex = itemCount == 1
+        ? 0
+        : ((localPosition.dx - leftPadding) / availableWidth * (itemCount - 1))
+            .round();
+
+    setState(() {
+      _selectedIndex = rawIndex.clamp(0, itemCount - 1);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _StartupLineChartPainter(
-        values: values,
-        labels: labels,
-      ),
-      child: Container(),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (details) {
+            _selectNearestPoint(details.localPosition, constraints.maxWidth);
+          },
+          onHorizontalDragStart: (details) {
+            _selectNearestPoint(details.localPosition, constraints.maxWidth);
+          },
+          onHorizontalDragUpdate: (details) {
+            _selectNearestPoint(details.localPosition, constraints.maxWidth);
+          },
+          child: CustomPaint(
+            painter: _StartupLineChartPainter(
+              values: widget.values,
+              labels: widget.labels,
+              selectedIndex: _selectedIndex,
+            ),
+            child: Container(),
+          ),
+        );
+      },
     );
   }
 }
@@ -1079,10 +1163,12 @@ class _StartupLineChart extends StatelessWidget {
 class _StartupLineChartPainter extends CustomPainter {
   final List<double> values;
   final List<String> labels;
+  final int? selectedIndex;
 
   _StartupLineChartPainter({
     required this.values,
     required this.labels,
+    required this.selectedIndex,
   });
 
   @override
@@ -1093,20 +1179,25 @@ class _StartupLineChartPainter extends CustomPainter {
 
     if (itemCount == 0) return;
 
-    final chartHeight = size.height - 42;
-    final leftPadding = itemCount > 8 ? 10.0 : 16.0;
-    final rightPadding = itemCount > 8 ? 10.0 : 16.0;
-    final topPadding = 12.0;
-    final bottomLabelTop = chartHeight + 12;
+    const leftPadding = 64.0;
+    const rightPadding = 22.0;
+    const topPadding = 14.0;
+    const bottomPadding = 34.0;
+    final chartHeight = size.height - topPadding - bottomPadding;
+    final chartBottom = topPadding + chartHeight;
     final availableWidth = size.width - leftPadding - rightPadding;
 
     final gridPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.06)
+      ..color = Colors.white.withValues(alpha: 0.07)
       ..strokeWidth = 1;
+
+    final axisPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.12)
+      ..strokeWidth = 1.2;
 
     final linePaint = Paint()
       ..color = AppColors.primaryLight
-      ..strokeWidth = 3.2
+      ..strokeWidth = 3.4
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
@@ -1121,9 +1212,9 @@ class _StartupLineChartPainter extends CustomPainter {
         ],
       ).createShader(
         Rect.fromLTWH(
-          0,
+          leftPadding,
           topPadding,
-          size.width,
+          availableWidth,
           chartHeight,
         ),
       );
@@ -1140,33 +1231,57 @@ class _StartupLineChartPainter extends CustomPainter {
       ..color = AppColors.primary
       ..style = PaintingStyle.fill;
 
-    for (int i = 1; i <= 4; i++) {
-      final y = topPadding + (chartHeight * i / 5);
+    final visibleValues = values.take(itemCount).toList();
+    final minValue = visibleValues.reduce((a, b) => a < b ? a : b);
+    final maxValue = visibleValues.reduce((a, b) => a > b ? a : b);
+    final rawRange = maxValue - minValue;
+    final padding = rawRange == 0 ? maxValue.abs() * 0.08 : rawRange * 0.18;
+    final chartMin = minValue - padding;
+    final chartMax = maxValue + padding;
+    final range = (chartMax - chartMin) == 0 ? 1.0 : (chartMax - chartMin);
+
+    for (int i = 0; i <= 4; i++) {
+      final y = topPadding + (chartHeight * i / 4);
       canvas.drawLine(
         Offset(leftPadding, y),
         Offset(size.width - rightPadding, y),
         gridPaint,
       );
+
+      final value = chartMax - (range * i / 4);
+      _paintText(
+        canvas: canvas,
+        text: 'R\$ ${_formatPriceAxisValue(value)}',
+        x: 0,
+        y: y - 8,
+        maxWidth: leftPadding - 8,
+        color: AppColors.textSecondary,
+        fontSize: 10.5,
+        textAlign: TextAlign.right,
+      );
     }
 
-    final visibleValues = values.take(itemCount).toList();
-    final minValue = visibleValues.reduce((a, b) => a < b ? a : b);
-    final maxValue = visibleValues.reduce((a, b) => a > b ? a : b);
-    final range = (maxValue - minValue) == 0 ? 1.0 : (maxValue - minValue);
+    canvas.drawLine(
+      Offset(leftPadding, topPadding),
+      Offset(leftPadding, chartBottom),
+      axisPaint,
+    );
+    canvas.drawLine(
+      Offset(leftPadding, chartBottom),
+      Offset(size.width - rightPadding, chartBottom),
+      axisPaint,
+    );
 
     final points = <Offset>[];
 
     for (int i = 0; i < itemCount; i++) {
       final x = itemCount == 1
-          ? size.width / 2
+          ? leftPadding + availableWidth / 2
           : leftPadding + (availableWidth / (itemCount - 1)) * i;
 
-      final normalized = (values[i] - minValue) / range;
+      final normalized = (values[i] - chartMin) / range;
 
-      final y = topPadding +
-          chartHeight -
-          (normalized * (chartHeight - 18)) -
-          8;
+      final y = chartBottom - (normalized * chartHeight);
 
       points.add(Offset(x, y));
     }
@@ -1178,56 +1293,179 @@ class _StartupLineChartPainter extends CustomPainter {
     }
 
     final fillPath = Path.from(linePath)
-      ..lineTo(points.last.dx, topPadding + chartHeight)
-      ..lineTo(points.first.dx, topPadding + chartHeight)
+      ..lineTo(points.last.dx, chartBottom)
+      ..lineTo(points.first.dx, chartBottom)
       ..close();
 
     canvas.drawPath(fillPath, fillPaint);
     canvas.drawPath(linePath, linePaint);
 
-    for (final point in points) {
-      canvas.drawCircle(point, 7, pointGlowPaint);
-      canvas.drawCircle(point, 4.8, pointBorderPaint);
-      canvas.drawCircle(point, 3.4, pointPaint);
+    final activeIndex = (selectedIndex ?? itemCount - 1).clamp(0, itemCount - 1);
+    final activePoint = points[activeIndex];
+
+    canvas.drawLine(
+      Offset(activePoint.dx, chartBottom),
+      activePoint,
+      Paint()
+        ..color = AppColors.primaryLight.withValues(alpha: 0.28)
+        ..strokeWidth = 1.2,
+    );
+
+    for (int i = 0; i < points.length; i++) {
+      final point = points[i];
+      final isActive = i == activeIndex;
+
+      canvas.drawCircle(point, isActive ? 8 : 6.5, pointGlowPaint);
+      canvas.drawCircle(point, isActive ? 5.4 : 4.6, pointBorderPaint);
+      canvas.drawCircle(point, isActive ? 3.8 : 3.2, pointPaint);
     }
 
+    _paintValueBubble(
+      canvas: canvas,
+      text:
+          '${labels[activeIndex]}  R\$ ${_formatSelectedPriceValue(values[activeIndex])}',
+      anchor: activePoint,
+      size: size,
+    );
+
+    final labelStep = itemCount > 8 ? 2 : 1;
     for (int i = 0; i < itemCount; i++) {
+      if (i != itemCount - 1 && i % labelStep != 0) continue;
+      if (itemCount > 8 && i == itemCount - 2) continue;
+
       final label = labels[i];
+      final point = points[i];
+      const labelWidth = 48.0;
+      final labelX = (point.dx - labelWidth / 2)
+          .clamp(0.0, size.width - labelWidth);
 
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: label,
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: itemCount > 8 ? 10.5 : 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+      _paintText(
+        canvas: canvas,
+        text: label,
+        x: labelX,
+        y: chartBottom + 12,
+        maxWidth: labelWidth,
+        color: i == activeIndex ? AppColors.primaryLight : AppColors.textSecondary,
+        fontSize: 11,
         textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-        maxLines: 1,
-      )..layout();
-
-      double x = points[i].dx - textPainter.width / 2;
-
-      if (x < 0) x = 0;
-      if (x + textPainter.width > size.width) {
-        x = size.width - textPainter.width;
-      }
-
-      textPainter.paint(
-        canvas,
-        Offset(
-          x,
-          bottomLabelTop,
-        ),
       );
     }
   }
 
+  void _paintValueBubble({
+    required Canvas canvas,
+    required String text,
+    required Offset anchor,
+    required Size size,
+  }) {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+
+    const horizontalPadding = 8.0;
+    const verticalPadding = 5.0;
+    final width = textPainter.width + horizontalPadding * 2;
+    final height = textPainter.height + verticalPadding * 2;
+
+    var left = anchor.dx - width / 2;
+    var top = anchor.dy - height - 10;
+
+    if (left < 0) left = 0;
+    if (left + width > size.width) left = size.width - width;
+    if (top < 0) top = anchor.dy + 10;
+
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(left, top, width, height),
+      const Radius.circular(12),
+    );
+
+    canvas.drawRRect(
+      rect,
+      Paint()..color = const Color(0xFF102235),
+    );
+    canvas.drawRRect(
+      rect,
+      Paint()
+        ..color = AppColors.primaryLight.withValues(alpha: 0.55)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+
+    textPainter.paint(
+      canvas,
+      Offset(left + horizontalPadding, top + verticalPadding),
+    );
+  }
+
+  void _paintText({
+    required Canvas canvas,
+    required String text,
+    required double x,
+    required double y,
+    required double maxWidth,
+    required Color color,
+    required double fontSize,
+    TextAlign textAlign = TextAlign.left,
+  }) {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: color,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      textAlign: textAlign,
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout(maxWidth: maxWidth);
+
+    var paintX = x;
+
+    if (textAlign == TextAlign.center) {
+      paintX = x + (maxWidth - textPainter.width) / 2;
+    } else if (textAlign == TextAlign.right) {
+      paintX = x + maxWidth - textPainter.width;
+    }
+
+    textPainter.paint(canvas, Offset(paintX, y));
+  }
+
+  String _formatPriceAxisValue(double value) {
+    if (value.abs() < 0.1) {
+      return value.toStringAsFixed(3).replaceAll('.', ',');
+    }
+
+    if (value.abs() < 1) {
+      return value.toStringAsFixed(2).replaceAll('.', ',');
+    }
+
+    return value.toStringAsFixed(1).replaceAll('.', ',');
+  }
+
+  String _formatSelectedPriceValue(double value) {
+    if (value.abs() < 0.1) {
+      return value.toStringAsFixed(3).replaceAll('.', ',');
+    }
+
+    return value.toStringAsFixed(2).replaceAll('.', ',');
+  }
+
   @override
   bool shouldRepaint(covariant _StartupLineChartPainter oldDelegate) {
-    return oldDelegate.values != values || oldDelegate.labels != labels;
+    return oldDelegate.values != values ||
+        oldDelegate.labels != labels ||
+        oldDelegate.selectedIndex != selectedIndex;
   }
 }
 

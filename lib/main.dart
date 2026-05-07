@@ -7,9 +7,29 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  final firebaseInitialization = _initializeFirebase();
 
-  runApp(const MesclaInvestApp());
+  runApp(
+    MesclaInvestApp(
+      firebaseInitialization: firebaseInitialization,
+    ),
+  );
+}
+
+Future<Object?> _initializeFirebase() async {
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    return null;
+  } catch (error, stackTrace) {
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stackTrace,
+        library: 'firebase initialization',
+      ),
+    );
+    return error;
+  }
 }

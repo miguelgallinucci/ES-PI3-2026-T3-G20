@@ -1,11 +1,11 @@
-/// Widget Card de Investimento
-/// 
-/// Exibe as informações de um investimento individual em formato de card,
-/// incluindo:
-/// - Nome e setor do investimento
-/// - Valor investido e valor atual
-/// - Performance/retorno do investimento
-/// - Indicação visual se a performance é positiva ou negativa
+// Widget Card de Investimento
+//
+// Exibe as informações de um investimento individual em formato de card,
+// incluindo:
+// - Nome e setor do investimento
+// - Valor investido e valor atual
+// - Performance/retorno do investimento
+// - Indicação visual se a performance é positiva ou negativa
 
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
