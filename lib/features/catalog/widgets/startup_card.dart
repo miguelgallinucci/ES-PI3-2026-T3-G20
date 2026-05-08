@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../models/startup_model.dart';
+import '../../startup/models/startup_model.dart';
 
 const Color _orange = Color(0xFFFF5F14);
 

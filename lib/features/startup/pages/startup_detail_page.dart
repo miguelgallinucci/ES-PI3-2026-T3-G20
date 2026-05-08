@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../data/startup_questions_service.dart';
+import '../services/startup_questions_service.dart';
 import '../models/startup_model.dart';
-import 'investment_page.dart';
+import 'token_purchase_page.dart';
 
 enum ChartPeriod {
   day,
@@ -13,7 +13,7 @@ enum ChartPeriod {
   year,
 }
 
-class StartupDetailsPage extends StatefulWidget {
+class StartupDetailPage extends StatefulWidget {
   final StartupModel startup;
 
   final List<double>? chartValues;
@@ -22,7 +22,7 @@ class StartupDetailsPage extends StatefulWidget {
   final List<StartupQuestion>? questions;
   final List<StartupDocumentItem>? documents;
 
-  const StartupDetailsPage({
+  const StartupDetailPage({
     super.key,
     required this.startup,
     this.chartValues,
@@ -33,10 +33,10 @@ class StartupDetailsPage extends StatefulWidget {
   });
 
   @override
-  State<StartupDetailsPage> createState() => _StartupDetailsPageState();
+  State<StartupDetailPage> createState() => _StartupDetailPageState();
 }
 
-class _StartupDetailsPageState extends State<StartupDetailsPage> {
+class _StartupDetailPageState extends State<StartupDetailPage> {
   final TextEditingController _questionController = TextEditingController();
   final StartupQuestionsService _questionsService = StartupQuestionsService();
 
@@ -339,7 +339,7 @@ class _StartupDetailsPageState extends State<StartupDetailsPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => InvestmentPage(
+        builder: (_) => TokenPurchasePage(
           startupName: widget.startup.name,
           sector: widget.startup.displaySector,
           tokenPrice: tokenPrice,

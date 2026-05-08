@@ -1,4 +1,4 @@
-import '../models/startup_model.dart';
+import '../../startup/models/startup_model.dart';
 
 const List<StartupModel> mockStartups = [
   StartupModel(

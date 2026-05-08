@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../models/startup_model.dart';
+import '../../startup/models/startup_model.dart';
 
 class StartupFirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../data/startup_firestore_service.dart';
-import '../models/startup_model.dart';
-import 'startup_details_page.dart';
+import '../../startup/models/startup_model.dart';
+import '../../startup/pages/startup_detail_page.dart';
 import '../../profile/pages/profile_page.dart';
 
 class CatalogPage extends StatefulWidget {
@@ -614,7 +614,7 @@ class _CatalogPageState extends State<CatalogPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => StartupDetailsPage(
+        builder: (_) => StartupDetailPage(
           startup: startup,
         ),
       ),

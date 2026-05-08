@@ -3,16 +3,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
-import 'catalog_page.dart';
+import '../../catalog/pages/catalog_page.dart';
 import '../../wallet/pages/wallet_page.dart';
 
-class InvestmentPage extends StatefulWidget {
+class TokenPurchasePage extends StatefulWidget {
   final String startupName;
   final String sector;
   final String tokenPrice;
   final String availableBalance;
 
-  const InvestmentPage({
+  const TokenPurchasePage({
     super.key,
     required this.startupName,
     required this.sector,
@@ -21,10 +21,10 @@ class InvestmentPage extends StatefulWidget {
   });
 
   @override
-  State<InvestmentPage> createState() => _InvestmentPageState();
+  State<TokenPurchasePage> createState() => _TokenPurchasePageState();
 }
 
-class _InvestmentPageState extends State<InvestmentPage> {
+class _TokenPurchasePageState extends State<TokenPurchasePage> {
   final TextEditingController quantityController = TextEditingController();
 
   double _saldoDisponivel = 0;
