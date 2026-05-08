@@ -48,3 +48,7 @@ app.*.map.json
 mobile/build/
 mobile/.dart_tool/
 mobile/.idea/
+
+# Firebase Functions generated files
+functions/node_modules/
+functions/lib/
