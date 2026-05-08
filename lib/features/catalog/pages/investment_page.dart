@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import 'catalog_page.dart';
-import '../../portfolio/pages/portfolio_page.dart';
+import '../../wallet/pages/wallet_page.dart';
 
 class InvestmentPage extends StatefulWidget {
   final String startupName;
@@ -486,7 +486,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
     );
   }
 
-  void _goToPortfolio(BuildContext pageContext, BuildContext dialogContext) {
+  void _goToWallet(BuildContext pageContext, BuildContext dialogContext) {
     Navigator.of(dialogContext).pop();
 
     final navigator = Navigator.of(pageContext);
@@ -501,7 +501,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
     Future.microtask(() {
       navigator.push(
         MaterialPageRoute(
-          builder: (_) => const PortfolioPage(),
+          builder: (_) => const WalletPage(),
         ),
       );
     });
@@ -529,7 +529,7 @@ class _InvestmentPageState extends State<InvestmentPage> {
         ),
         actions: [
           ElevatedButton(
-            onPressed: () => _goToPortfolio(pageContext, dialogContext),
+            onPressed: () => _goToWallet(pageContext, dialogContext),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white.withValues(alpha: 0.08),
               foregroundColor: Colors.white,

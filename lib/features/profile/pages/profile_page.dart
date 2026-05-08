@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/pages/login_page.dart';
 import '../../dashboard/pages/dashboard_page.dart';
-import '../../portfolio/pages/portfolio_page.dart';
+import '../../wallet/pages/wallet_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -168,7 +168,7 @@ class ProfilePage extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const PortfolioPage(),
+                                builder: (_) => const WalletPage(),
                               ),
                             );
                           },

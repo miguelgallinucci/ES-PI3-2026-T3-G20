@@ -3,22 +3,22 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../services/portfolio_service.dart';
+import '../services/wallet_service.dart';
 
 /// Widget principal da página de portfólio
 /// Responsável por exibir a carteira de investimentos do usuário
-class PortfolioPage extends StatefulWidget {
-  const PortfolioPage({super.key});
+class WalletPage extends StatefulWidget {
+  const WalletPage({super.key});
 
   @override
-  State<PortfolioPage> createState() => _PortfolioPageState();
+  State<WalletPage> createState() => _WalletPageState();
 }
 
 /// Estado da página de portfólio
 /// Gerencia a inicialização, formatação de dados e exibição de modais
-class _PortfolioPageState extends State<PortfolioPage> {
+class _WalletPageState extends State<WalletPage> {
   /// Serviço responsável por operações do portfólio no Firestore
-  final PortfolioService _portfolioService = PortfolioService();
+  final WalletService _portfolioService = WalletService();
 
   /// Flag para indicar se a página está em processo de inicialização
   bool _isInitializing = true;

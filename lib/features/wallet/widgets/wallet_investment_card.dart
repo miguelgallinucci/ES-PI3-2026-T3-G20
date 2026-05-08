@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 /// Widget que exibe as informações de um investimento em formato de card
-class InvestmentCard extends StatelessWidget {
+class WalletInvestmentCard extends StatelessWidget {
   /// Nome do investimento/ativo
   final String name;
   /// Setor de atuação do investimento
@@ -27,7 +27,7 @@ class InvestmentCard extends StatelessWidget {
 
   /// Construtor do card de investimento
   /// Todos os parâmetros são obrigatórios
-  const InvestmentCard({
+  const WalletInvestmentCard({
     super.key,
     required this.name,
     required this.sector,

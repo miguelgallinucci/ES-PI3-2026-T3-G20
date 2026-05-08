@@ -14,7 +14,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // Classe de serviço para gerenciar operações de portfólio
-class PortfolioService {
+class WalletService {
   // Instância do Firestore para acesso à base de dados
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   // Instância do Firebase Authentication
