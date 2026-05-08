@@ -7,6 +7,7 @@ import 'catalog_page.dart';
 import '../../portfolio/pages/portfolio_page.dart';
 
 class InvestmentPage extends StatefulWidget {
+  final String startupId;
   final String startupName;
   final String sector;
   final String tokenPrice;
@@ -14,6 +15,7 @@ class InvestmentPage extends StatefulWidget {
 
   const InvestmentPage({
     super.key,
+    this.startupId = '',
     required this.startupName,
     required this.sector,
     required this.tokenPrice,
@@ -53,6 +55,18 @@ class _InvestmentPageState extends State<InvestmentPage> {
           quantity > 0 &&
           tokenPriceValue > 0 &&
           hasEnoughBalance;
+
+  String get _positionId {
+    if (widget.startupId.trim().isNotEmpty) {
+      return widget.startupId.trim();
+    }
+
+    return widget.startupName
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
+  }
 
   @override
   void initState() {
@@ -154,27 +168,52 @@ class _InvestmentPageState extends State<InvestmentPage> {
     try {
       final firestore = FirebaseFirestore.instance;
       final userRef = firestore.collection('users').doc(uid);
+      final positionRef = userRef.collection('positions').doc(_positionId);
 
       await firestore.runTransaction((transaction) async {
         final userSnapshot = await transaction.get(userRef);
+        final positionSnapshot = await transaction.get(positionRef);
         final userData = userSnapshot.data();
+        final positionData = positionSnapshot.data();
 
         final saldoAtual = _toDouble(userData?['saldoFicticio']);
+        final currentQuantity = (positionData?['quantity'] as num?)?.toInt() ?? 0;
+        final currentTotalInvested = _toDouble(positionData?['totalInvested']);
 
         if (totalValue > saldoAtual) {
           throw Exception('saldo_insuficiente');
         }
 
         final novoSaldo = saldoAtual - totalValue;
+        final newQuantity = currentQuantity + quantity;
+        final newTotalInvested = currentTotalInvested + totalValue;
 
         transaction.update(userRef, {
           'saldoFicticio': novoSaldo,
         });
 
+        transaction.set(
+          positionRef,
+          {
+            'startupId': _positionId,
+            'startupName': widget.startupName,
+            'sector': widget.sector,
+            'quantity': newQuantity,
+            'tokenPrice': tokenPriceValue,
+            'totalInvested': newTotalInvested,
+            'averagePrice': newTotalInvested / newQuantity,
+            'updatedAt': FieldValue.serverTimestamp(),
+            if (!positionSnapshot.exists)
+              'createdAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
+
         final transactionRef = firestore.collection('transactions').doc();
 
         transaction.set(transactionRef, {
           'userId': uid,
+          'startupId': _positionId,
 
           'type': 'compra',
           'title': 'Compra de tokens',
