@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../startup/models/startup_model.dart';
 
-class StartupFirestoreService {
+class CatalogService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Stream<List<StartupModel>> watchStartups() {

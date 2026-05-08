@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
-import '../data/startup_firestore_service.dart';
+import '../services/catalog_service.dart';
 import '../../startup/models/startup_model.dart';
 import '../../startup/pages/startup_detail_page.dart';
 import '../../profile/pages/profile_page.dart';
@@ -22,7 +22,7 @@ class _CatalogPageState extends State<CatalogPage> {
   String selectedSector = 'Todos os setores';
   String selectedStage = 'Todos os estágios';
 
-  final StartupFirestoreService _startupService = StartupFirestoreService();
+  final CatalogService _startupService = CatalogService();
 
   final List<_AvailableOffer> availableOffers = const [
     _AvailableOffer(
