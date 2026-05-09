@@ -4,7 +4,7 @@ import * as admin from 'firebase-admin';
 admin.initializeApp();
 
 // Export function modules
-// export * from './auth';
+export * from './auth';
 export * from './startups';
 export * from './wallet';
 export * from './transactions';
