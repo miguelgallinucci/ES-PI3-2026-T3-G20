@@ -68,29 +68,6 @@ class WalletService {
         .snapshots();
   }
 
-  // Garante que o campo de saldo fictício existe no documento do usuário
-  // Se o campo não existir, ele é criado com valor inicial 0.0
-  // Lança Exception se o usuário não estiver autenticado ou se os dados não forem encontrados
-  Future<void> ensureWalletFieldExists() async {
-    final userRef = _currentUserRef;
-
-    if (userRef == null) {
-      throw Exception('Usuário não autenticado.');
-    }
-
-    final userSnapshot = await userRef.get();
-    final userData = userSnapshot.data();
-
-    if (userData == null) {
-      throw Exception('Dados do usuário não encontrados.');
-    }
-
-    if (!userData.containsKey('saldoFicticio')) {
-      await userRef.update({
-        'saldoFicticio': 0.0,
-      });
-    }
-  }
 
   // Adiciona um aporte simulado ao saldo do usuário via Cloud Functions
   //

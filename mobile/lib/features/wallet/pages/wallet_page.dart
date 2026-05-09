@@ -20,37 +20,12 @@ class _WalletPageState extends State<WalletPage> {
   /// Serviço responsável por operações do portfólio no Firestore
   final WalletService _walletService = WalletService();
 
-  /// Flag para indicar se a página está em processo de inicialização
-  bool _isInitializing = true;
 
   @override
   void initState() {
     super.initState();
-    _initializeWallet();
   }
 
-  /// Inicializa o portfólio garantindo que o campo de saldo fictício
-  /// existe no documento do usuário no Firestore.
-  /// Se houver erro, exibe um SnackBar com a mensagem de erro.
-  Future<void> _initializeWallet() async {
-    try {
-      await _walletService.ensureWalletFieldExists();
-    } catch (error) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao carregar carteira: $error'),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isInitializing = false;
-        });
-      }
-    }
-  }
 
   /// Formata um valor numérico para o padrão de moeda brasileira (R$)
   /// Exemplo: 1000.50 -> R$ 1000,50
@@ -258,16 +233,6 @@ class _WalletPageState extends State<WalletPage> {
   /// Caso contrário, exibe gradiente de fundo, saldo, tokens e histórico de transações
   @override
   Widget build(BuildContext context) {
-    if (_isInitializing) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF04111D),
-        body: Center(
-          child: CircularProgressIndicator(
-            color: AppColors.primary,
-          ),
-        ),
-      );
-    }
 
     return Scaffold(
       body: Container(
