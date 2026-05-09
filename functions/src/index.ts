@@ -5,7 +5,7 @@ admin.initializeApp();
 
 // Export function modules
 // export * from './auth';
-// export * from './startups';
+export * from './startups';
 export * from './wallet';
 // export * from './transactions';
 // export * from './dashboard';
