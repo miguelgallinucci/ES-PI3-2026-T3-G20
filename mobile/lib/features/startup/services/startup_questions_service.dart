@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class StartupQuestionsService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   CollectionReference<Map<String, dynamic>> get _questionsCollection {
     return _firestore.collection('questions');
@@ -23,24 +23,19 @@ class StartupQuestionsService {
     required String startupName,
     required String question,
   }) async {
-    final user = _auth.currentUser;
-
-    if (user == null) {
-      throw Exception('Usuário não autenticado.');
+    if (question.trim().isEmpty) {
+      throw Exception('A pergunta não pode ser vazia.');
     }
 
-    await _questionsCollection.add({
-      'startupId': startupId,
-      'startupName': startupName,
-      'question': question,
-      'answer': '',
-      'createdAt': FieldValue.serverTimestamp(),
-      'answeredAt': null,
-      'userId': user.uid,
-      'userName': user.displayName ?? '',
-      'userEmail': user.email ?? '',
-      'isPublic': true,
-      'status': 'aguardando_resposta',
-    });
+    try {
+      final callable = _functions.httpsCallable('sendQuestion');
+      await callable.call({
+        'startupId': startupId,
+        'startupName': startupName,
+        'question': question,
+      });
+    } catch (e) {
+      throw Exception('Falha ao enviar pergunta: $e');
+    }
   }
 }
