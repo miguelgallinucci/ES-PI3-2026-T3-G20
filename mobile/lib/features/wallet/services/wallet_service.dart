@@ -11,6 +11,7 @@
 // para persistência de dados.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // Classe de serviço para gerenciar operações de portfólio
@@ -19,6 +20,8 @@ class WalletService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   // Instância do Firebase Authentication
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Instância do Firebase Functions
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   // Retorna o ID do usuário autenticado atualmente
   // Pode ser null se o usuário não estiver autenticado
@@ -89,51 +92,23 @@ class WalletService {
     }
   }
 
-  // Adiciona um aporte simulado ao saldo do usuário
-  // Executa de forma atômica uma transação que:
-  // 1. Atualiza o saldoFicticio do usuário
-  // 2. Cria um registro da transação na coleção 'transactions'
+  // Adiciona um aporte simulado ao saldo do usuário via Cloud Functions
   //
   // Lança Exception se:
-  // - O usuário não estiver autenticado
   // - O valor for menor ou igual a zero
-  // - Os dados do usuário não forem encontrados
+  // - Ocorrer algum erro na chamada da função
   Future<void> addSimulatedBalance(double amount) async {
-    final uid = currentUserId;
-    final userRef = _currentUserRef;
-
-    if (uid == null || userRef == null) {
-      throw Exception('Usuário não autenticado.');
-    }
-
     if (amount <= 0) {
       throw Exception('O valor precisa ser maior que zero.');
     }
 
-    final transactionRef = _firestore.collection('transactions').doc();
-
-    await _firestore.runTransaction((transaction) async {
-      final userSnapshot = await transaction.get(userRef);
-      final userData = userSnapshot.data();
-
-      if (userData == null) {
-        throw Exception('Dados do usuário não encontrados.');
-      }
-
-      final currentBalance = (userData['saldoFicticio'] ?? 0).toDouble();
-      final newBalance = currentBalance + amount;
-
-      transaction.update(userRef, {
-        'saldoFicticio': newBalance,
+    try {
+      final callable = _functions.httpsCallable('addSimulatedBalance');
+      await callable.call({
+        'amount': amount,
       });
-
-      transaction.set(transactionRef, {
-        'userId': uid,
-        'tipo': 'aporte_simulado',
-        'valorTotal': amount,
-        'descricao': 'Adição de saldo simulado',
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-    });
+    } catch (e) {
+      throw Exception('Falha ao adicionar saldo simulado: $e');
+    }
   }
 }
