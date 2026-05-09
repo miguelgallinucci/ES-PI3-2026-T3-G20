@@ -19,7 +19,7 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   DashboardPeriod _selectedPeriod = DashboardPeriod.month;
 
-  List<double> get _portfolioValues {
+  List<double> get _walletValues {
     switch (_selectedPeriod) {
       case DashboardPeriod.day:
         return const [13880, 13920, 13905, 14040, 14010, 14120, 14180];
@@ -47,7 +47,7 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  List<String> get _portfolioLabels {
+  List<String> get _walletLabels {
     switch (_selectedPeriod) {
       case DashboardPeriod.day:
         return const ['00h', '04h', '08h', '12h', '16h', '20h', '24h'];
@@ -92,8 +92,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final values = _portfolioValues;
-    final labels = _portfolioLabels;
+    final values = _walletValues;
+    final labels = _walletLabels;
     final currentValue = values.last;
     final firstValue = values.first;
     final variation = ((currentValue - firstValue) / firstValue) * 100;
@@ -211,7 +211,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           const SizedBox(height: 22),
                           SizedBox(
                             height: 260,
-                            child: PortfolioLineChart(
+                            child: WalletLineChart(
                               values: values,
                               labels: labels,
                             ),
@@ -382,25 +382,25 @@ class _DashboardPeriodButton {
   });
 }
 
-class PortfolioLineChart extends StatefulWidget {
+class WalletLineChart extends StatefulWidget {
   final List<double> values;
   final List<String> labels;
 
-  const PortfolioLineChart({
+  const WalletLineChart({
     super.key,
     required this.values,
     required this.labels,
   });
 
   @override
-  State<PortfolioLineChart> createState() => _PortfolioLineChartState();
+  State<WalletLineChart> createState() => _WalletLineChartState();
 }
 
-class _PortfolioLineChartState extends State<PortfolioLineChart> {
+class _WalletLineChartState extends State<WalletLineChart> {
   int? _selectedIndex;
 
   @override
-  void didUpdateWidget(covariant PortfolioLineChart oldWidget) {
+  void didUpdateWidget(covariant WalletLineChart oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.values != widget.values || oldWidget.labels != widget.labels) {

@@ -18,7 +18,7 @@ class WalletPage extends StatefulWidget {
 /// Gerencia a inicialização, formatação de dados e exibição de modais
 class _WalletPageState extends State<WalletPage> {
   /// Serviço responsável por operações do portfólio no Firestore
-  final WalletService _portfolioService = WalletService();
+  final WalletService _walletService = WalletService();
 
   /// Flag para indicar se a página está em processo de inicialização
   bool _isInitializing = true;
@@ -26,15 +26,15 @@ class _WalletPageState extends State<WalletPage> {
   @override
   void initState() {
     super.initState();
-    _initializePortfolio();
+    _initializeWallet();
   }
 
   /// Inicializa o portfólio garantindo que o campo de saldo fictício
   /// existe no documento do usuário no Firestore.
   /// Se houver erro, exibe um SnackBar com a mensagem de erro.
-  Future<void> _initializePortfolio() async {
+  Future<void> _initializeWallet() async {
     try {
-      await _portfolioService.ensurePortfolioFieldExists();
+      await _walletService.ensureWalletFieldExists();
     } catch (error) {
       if (!mounted) return;
 
@@ -231,7 +231,7 @@ class _WalletPageState extends State<WalletPage> {
     }
 
     try {
-      await _portfolioService.addSimulatedBalance(selectedAmount);
+      await _walletService.addSimulatedBalance(selectedAmount);
 
       if (!mounted) return;
 
@@ -289,7 +289,7 @@ class _WalletPageState extends State<WalletPage> {
               constraints: const BoxConstraints(maxWidth: 460),
               child: Center(
                 child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-                  stream: _portfolioService.watchCurrentUserPortfolio(),
+                  stream: _walletService.watchCurrentUserWallet(),
                   builder: (context, userSnapshot) {
                     if (userSnapshot.connectionState ==
                         ConnectionState.waiting) {
@@ -447,7 +447,7 @@ class _WalletPageState extends State<WalletPage> {
                         ),
                         const SizedBox(height: 16),
                         StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                          stream: _portfolioService.watchUserTransactions(),
+                          stream: _walletService.watchUserTransactions(),
                           builder: (context, transactionSnapshot) {
                             if (transactionSnapshot.connectionState ==
                                 ConnectionState.waiting) {

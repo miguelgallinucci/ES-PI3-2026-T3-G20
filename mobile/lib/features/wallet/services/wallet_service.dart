@@ -42,7 +42,7 @@ class WalletService {
   // Observa em tempo real as alterações no portfólio do usuário atual
   // Retorna um Stream com o snapshot do documento do usuário
   // Lança Exception se o usuário não estiver autenticado
-  Stream<DocumentSnapshot<Map<String, dynamic>>> watchCurrentUserPortfolio() {
+  Stream<DocumentSnapshot<Map<String, dynamic>>> watchCurrentUserWallet() {
     final userRef = _currentUserRef;
 
     if (userRef == null) {
@@ -71,7 +71,7 @@ class WalletService {
   // Garante que o campo de saldo fictício existe no documento do usuário
   // Se o campo não existir, ele é criado com valor inicial 0.0
   // Lança Exception se o usuário não estiver autenticado ou se os dados não forem encontrados
-  Future<void> ensurePortfolioFieldExists() async {
+  Future<void> ensureWalletFieldExists() async {
     final userRef = _currentUserRef;
 
     if (userRef == null) {
