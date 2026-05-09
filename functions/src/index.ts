@@ -7,5 +7,5 @@ admin.initializeApp();
 // export * from './auth';
 export * from './startups';
 export * from './wallet';
-// export * from './transactions';
+export * from './transactions';
 // export * from './dashboard';
