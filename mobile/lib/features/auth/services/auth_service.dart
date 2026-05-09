@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   User? get currentUser {
     return _auth.currentUser;
@@ -42,17 +45,17 @@ class AuthService {
       password: password,
     );
 
-    final uid = credential.user!.uid;
-
-    await _firestore.collection('users').doc(uid).set({
-      'fullName': cleanFullName,
-      'email': cleanEmail,
-      'cpf': cleanCpf,
-      'phone': cleanPhone,
-      'role': 'investidor',
-      'mfaEnabled': false,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    try {
+      final callable = _functions.httpsCallable('createUserProfile');
+      await callable.call({
+        'fullName': cleanFullName,
+        'cpf': cleanCpf,
+        'phone': cleanPhone,
+      });
+    } catch (e) {
+      // Logamos o erro mas retornamos a credencial para não quebrar o fluxo de login automático do Auth
+      debugPrint('Erro ao criar perfil no backend: $e');
+    }
 
     return credential;
   }
