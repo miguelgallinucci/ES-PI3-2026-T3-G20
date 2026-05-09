@@ -1,21 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../catalog/pages/catalog_page.dart';
 import '../../wallet/pages/wallet_page.dart';
+import '../models/startup_model.dart';
 
 class TokenPurchasePage extends StatefulWidget {
-  final String startupName;
-  final String sector;
+  final StartupModel startup;
   final String tokenPrice;
   final String availableBalance;
 
   const TokenPurchasePage({
     super.key,
-    required this.startupName,
-    required this.sector,
+    required this.startup,
     required this.tokenPrice,
     required this.availableBalance,
   });
@@ -26,6 +26,7 @@ class TokenPurchasePage extends StatefulWidget {
 
 class _TokenPurchasePageState extends State<TokenPurchasePage> {
   final TextEditingController quantityController = TextEditingController();
+  final FirebaseFunctions _functions = FirebaseFunctions.instance;
 
   double _saldoDisponivel = 0;
   bool _isLoadingSaldo = true;
@@ -152,43 +153,11 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
     });
 
     try {
-      final firestore = FirebaseFirestore.instance;
-      final userRef = firestore.collection('users').doc(uid);
-
-      await firestore.runTransaction((transaction) async {
-        final userSnapshot = await transaction.get(userRef);
-        final userData = userSnapshot.data();
-
-        final saldoAtual = _toDouble(userData?['saldoFicticio']);
-
-        if (totalValue > saldoAtual) {
-          throw Exception('saldo_insuficiente');
-        }
-
-        final novoSaldo = saldoAtual - totalValue;
-
-        transaction.update(userRef, {
-          'saldoFicticio': novoSaldo,
-        });
-
-        final transactionRef = firestore.collection('transactions').doc();
-
-        transaction.set(transactionRef, {
-          'userId': uid,
-
-          'type': 'compra',
-          'title': 'Compra de tokens',
-          'description': '${widget.startupName} • $quantity token(s)',
-
-          'startupName': widget.startupName,
-          'sector': widget.sector,
-          'quantity': quantity,
-          'tokenPrice': tokenPriceValue,
-          'totalValue': totalValue,
-          'amount': -totalValue,
-
-          'createdAt': FieldValue.serverTimestamp(),
-        });
+      final callable = _functions.httpsCallable('buyTokens');
+      
+      await callable.call({
+        'startupId': widget.startup.id,
+        'quantity': quantity,
       });
 
       if (!mounted) return;
@@ -198,14 +167,25 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
       });
 
       _showSuccessDialog(context);
-    } catch (error) {
+    } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
 
-      if (error.toString().contains('saldo_insuficiente')) {
-        _showMessage('Saldo insuficiente para realizar esse investimento.');
-      } else {
-        _showMessage('Não foi possível confirmar o investimento.');
+      String message = 'Não foi possível confirmar o investimento.';
+      
+      if (e.message == 'saldo_insuficiente') {
+        message = 'Saldo insuficiente para realizar esse investimento.';
+      } else if (e.message != null && e.message!.contains('Tokens insuficientes')) {
+        message = 'A startup não possui tokens suficientes para esta compra.';
+      } else if (e.code == 'unauthenticated') {
+        message = 'Você precisa estar logado para investir.';
+      } else if (e.message != null) {
+        message = e.message!;
       }
+
+      _showMessage(message);
+    } catch (error) {
+      if (!mounted) return;
+      _showMessage('Erro ao processar investimento: $error');
     } finally {
       if (mounted) {
         setState(() {
@@ -261,7 +241,7 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Investir em ${widget.startupName}',
+                      'Investir em ${widget.startup.name}',
                       style: const TextStyle(
                         fontSize: 30,
                         fontWeight: FontWeight.bold,
@@ -303,7 +283,7 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  widget.sector,
+                                  widget.startup.displaySector,
                                   style: const TextStyle(
                                     color: AppColors.primaryLight,
                                     fontWeight: FontWeight.w600,
@@ -412,7 +392,7 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
                                 const SizedBox(height: 14),
                                 _SummaryRow(
                                   label: 'Startup',
-                                  value: widget.startupName,
+                                  value: widget.startup.name,
                                 ),
                                 _SummaryRow(
                                   label: 'Quantidade',
@@ -521,7 +501,7 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          'Você investiu em ${widget.startupName} com sucesso.',
+          'Você investiu em ${widget.startup.name} com sucesso.',
           style: const TextStyle(
             color: AppColors.textSecondary,
             height: 1.5,

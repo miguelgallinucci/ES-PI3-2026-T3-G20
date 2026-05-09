@@ -340,8 +340,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
       context,
       MaterialPageRoute(
         builder: (_) => TokenPurchasePage(
-          startupName: widget.startup.name,
-          sector: widget.startup.displaySector,
+          startup: widget.startup,
           tokenPrice: tokenPrice,
           availableBalance: 'R\$ 5.000,00',
         ),
