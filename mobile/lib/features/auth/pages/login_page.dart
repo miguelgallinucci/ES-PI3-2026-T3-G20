@@ -8,6 +8,7 @@ import '../../../shared/widgets/app_input.dart';
 import 'forgot_password_page.dart';
 import 'register_page.dart';
 import '../../catalog/pages/catalog_page.dart';
+import '../../../shared/widgets/app_background.dart';
 
 // Desenvolvido por Alycia Santos Bond
 // Tela de login do aplicativo MesclaInvest
@@ -114,19 +115,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Container com gradiente azul escuro como fundo
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF04111D),
-              Color(0xFF071A2B),
-              Color(0xFF0A2235),
-            ],
-          ),
-        ),
+      body: AppBackground(
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),

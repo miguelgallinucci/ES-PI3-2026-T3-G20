@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../services/auth_service.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
+import '../../../shared/widgets/app_background.dart';
 
 // Desenvolvido por Alycia Santos Bond
 // Tela de recuperação de senha do aplicativo MesclaInvest
@@ -99,19 +100,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     final Color feedbackColor = _isSuccess ? Colors.green : Colors.red;
 
     return Scaffold(
-      // Container com gradiente azul escuro como fundo
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF04111D),
-              Color(0xFF071A2B),
-              Color(0xFF0A2235),
-            ],
-          ),
-        ),
+      body: AppBackground(
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
