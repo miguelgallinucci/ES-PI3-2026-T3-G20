@@ -6,6 +6,11 @@ import '../models/startup_model.dart';
 import 'token_purchase_page.dart';
 import '../../../shared/widgets/app_section_card.dart';
 import '../../../shared/widgets/app_metric_card.dart';
+import '../widgets/startup_documents_section.dart';
+import '../widgets/startup_partners_section.dart';
+import '../widgets/startup_about_section.dart';
+import '../widgets/startup_metrics_section.dart';
+import '../widgets/startup_questions_section.dart';
 
 enum ChartPeriod {
   day,
@@ -426,61 +431,17 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                     ),
                     const SizedBox(height: 22),
 
-                    AppSectionCard(
-                      title: 'Sobre o projeto',
-                      subtitle: 'Resumo da proposta da startup',
-                      child: Text(
-                        widget.startup.aboutText,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 15,
-                          height: 1.6,
-                        ),
-                      ),
-                    ),
+                    StartupAboutSection(aboutText: widget.startup.aboutText),
 
                     const SizedBox(height: 18),
 
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppMetricCard(
-                            label: 'Capital aportado',
-                            value: widget.startup.capital,
-                            icon: Icons.account_balance_wallet_rounded,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AppMetricCard(
-                            label: 'Tokens emitidos',
-                            value: widget.startup.tokens,
-                            icon: Icons.generating_tokens_rounded,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppMetricCard(
-                            label: 'Tokens disponíveis',
-                            value: widget.startup.availableTokensText,
-                            icon: Icons.confirmation_number_rounded,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AppMetricCard(
-                            label: 'Status',
-                            value: widget.startup.status.trim().isNotEmpty
-                                ? widget.startup.status
-                                : widget.startup.stage,
-                            icon: Icons.verified_rounded,
-                          ),
-                        ),
-                      ],
+                    StartupMetricsSection(
+                      capital: widget.startup.capital,
+                      tokens: widget.startup.tokens,
+                      availableTokens: widget.startup.availableTokensText,
+                      status: widget.startup.status.trim().isNotEmpty
+                          ? widget.startup.status
+                          : widget.startup.stage,
                     ),
 
                     const SizedBox(height: 18),
@@ -500,47 +461,12 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                       },
                     ),
                     const SizedBox(height: 18),
-                    AppSectionCard(
-                      title: 'Estrutura societária',
-                      subtitle: 'Participação dos sócios no projeto',
-                      child: Column(
-                        children: [
-                          for (int i = 0; i < _societyMembers.length; i++) ...[
-                            _MemberRow(member: _societyMembers[i]),
-                            if (i != _societyMembers.length - 1)
-                              const SizedBox(height: 12),
-                          ],
-                        ],
-                      ),
+                    StartupPartnersSection(
+                      societyMembers: _societyMembers,
+                      mentors: _mentors,
                     ),
                     const SizedBox(height: 18),
-                    AppSectionCard(
-                      title: 'Mentores e conselho',
-                      subtitle: 'Apoio estratégico da startup',
-                      child: Column(
-                        children: [
-                          for (int i = 0; i < _mentors.length; i++) ...[
-                            _MemberRow(member: _mentors[i]),
-                            if (i != _mentors.length - 1)
-                              const SizedBox(height: 12),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    AppSectionCard(
-                      title: 'Documentos públicos',
-                      subtitle: 'Materiais essenciais para análise do investidor',
-                      child: Column(
-                        children: [
-                          for (int i = 0; i < _documents.length; i++) ...[
-                            _DocumentRow(item: _documents[i]),
-                            if (i != _documents.length - 1)
-                              const SizedBox(height: 12),
-                          ],
-                        ],
-                      ),
-                    ),
+                    StartupDocumentsSection(documents: _documents),
                     const SizedBox(height: 18),
                     StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                       stream: _questionsService.watchQuestions(
@@ -587,7 +513,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                           return dateB.compareTo(dateA);
                         });
 
-                        return _QuestionsSection(
+                        return StartupQuestionsSection(
                           controller: _questionController,
                           questions: questions,
                           onSend: _handleSendQuestion,
@@ -991,96 +917,6 @@ class _PeriodButton extends StatelessWidget {
   }
 }
 
-class _QuestionsSection extends StatelessWidget {
-  final TextEditingController controller;
-  final List<StartupQuestion> questions;
-  final VoidCallback onSend;
-
-  const _QuestionsSection({
-    required this.controller,
-    required this.questions,
-    required this.onSend,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AppSectionCard(
-      title: 'Perguntas públicas',
-      subtitle: 'Dúvidas dos usuários e respostas da startup',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.03),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              children: [
-                TextField(
-                  controller: controller,
-                  minLines: 2,
-                  maxLines: 4,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    hintText: 'Digite uma pergunta para os empreendedores...',
-                    hintStyle: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14,
-                    ),
-                    border: InputBorder.none,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  height: 46,
-                  child: OutlinedButton.icon(
-                    onPressed: onSend,
-                    icon: const Icon(Icons.send_rounded, size: 18),
-                    label: const Text(
-                      'Enviar pergunta',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primaryLight,
-                      side: BorderSide(
-                        color: AppColors.primary.withValues(alpha: 0.5),
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          if (questions.isEmpty)
-            const Text(
-              'Ainda não há perguntas públicas para esta startup.',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
-            )
-          else
-            Column(
-              children: [
-                for (int i = 0; i < questions.length; i++) ...[
-                  _QuestionItem(item: questions[i]),
-                  if (i != questions.length - 1) const SizedBox(height: 12),
-                ],
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-}
 
 class _StartupLineChart extends StatefulWidget {
   final List<double> values;
@@ -1469,239 +1305,8 @@ class _StartupLineChartPainter extends CustomPainter {
 }
 
 
-class _MemberRow extends StatelessWidget {
-  final StartupSocietyMember member;
 
-  const _MemberRow({
-    required this.member,
-  });
 
-  @override
-  Widget build(BuildContext context) {
-    final firstLetter =
-    member.name.isNotEmpty ? member.name[0].toUpperCase() : '?';
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.16),
-            child: Text(
-              firstLetter,
-              style: const TextStyle(
-                color: AppColors.primaryLight,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  member.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  member.role,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (member.percentage != null)
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 7,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.11),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                member.percentage!,
-                style: const TextStyle(
-                  color: AppColors.primaryLight,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QuestionItem extends StatelessWidget {
-  final StartupQuestion item;
-
-  const _QuestionItem({
-    required this.item,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final hasAnswer = item.answer != null && item.answer!.trim().isNotEmpty;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: hasAnswer
-              ? AppColors.border
-              : AppColors.primary.withValues(alpha: 0.18),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.help_outline_rounded,
-                color: AppColors.primaryLight,
-                size: 19,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  item.question,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    height: 1.35,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (hasAnswer)
-            Padding(
-              padding: const EdgeInsets.only(left: 27),
-              child: Text(
-                item.answer!,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                  height: 1.5,
-                ),
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.only(left: 27),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.09),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Text(
-                  'Aguardando resposta da startup',
-                  style: TextStyle(
-                    color: AppColors.primaryLight,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DocumentRow extends StatelessWidget {
-  final StartupDocumentItem item;
-
-  const _DocumentRow({
-    required this.item,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.13),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              item.icon,
-              color: AppColors.primaryLight,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.description,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 13,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: AppColors.textSecondary,
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 class StartupSocietyMember {
   final String name;
