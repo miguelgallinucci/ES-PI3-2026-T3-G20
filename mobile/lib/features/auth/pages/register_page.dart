@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../catalog/pages/catalog_page.dart';
 import '../services/auth_service.dart';
-import '../widgets/app_button.dart';
-import '../widgets/app_input.dart';
+import '../../../shared/widgets/app_button.dart';
+import '../../../shared/widgets/app_input.dart';
 // Desenvolvido por Alycia Santos Bond
 // Tela de cadastro do aplicativo MesclaInvest
 
