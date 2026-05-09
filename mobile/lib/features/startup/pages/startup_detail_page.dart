@@ -4,6 +4,8 @@ import '../../../core/theme/app_colors.dart';
 import '../services/startup_questions_service.dart';
 import '../models/startup_model.dart';
 import 'token_purchase_page.dart';
+import '../../../shared/widgets/app_section_card.dart';
+import '../../../shared/widgets/app_metric_card.dart';
 
 enum ChartPeriod {
   day,
@@ -424,7 +426,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                     ),
                     const SizedBox(height: 22),
 
-                    _SectionCard(
+                    AppSectionCard(
                       title: 'Sobre o projeto',
                       subtitle: 'Resumo da proposta da startup',
                       child: Text(
@@ -442,7 +444,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                     Row(
                       children: [
                         Expanded(
-                          child: _InfoCard(
+                          child: AppMetricCard(
                             label: 'Capital aportado',
                             value: widget.startup.capital,
                             icon: Icons.account_balance_wallet_rounded,
@@ -450,7 +452,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _InfoCard(
+                          child: AppMetricCard(
                             label: 'Tokens emitidos',
                             value: widget.startup.tokens,
                             icon: Icons.generating_tokens_rounded,
@@ -462,7 +464,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                     Row(
                       children: [
                         Expanded(
-                          child: _InfoCard(
+                          child: AppMetricCard(
                             label: 'Tokens disponíveis',
                             value: widget.startup.availableTokensText,
                             icon: Icons.confirmation_number_rounded,
@@ -470,7 +472,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _InfoCard(
+                          child: AppMetricCard(
                             label: 'Status',
                             value: widget.startup.status.trim().isNotEmpty
                                 ? widget.startup.status
@@ -498,7 +500,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                       },
                     ),
                     const SizedBox(height: 18),
-                    _SectionCard(
+                    AppSectionCard(
                       title: 'Estrutura societária',
                       subtitle: 'Participação dos sócios no projeto',
                       child: Column(
@@ -512,7 +514,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 18),
-                    _SectionCard(
+                    AppSectionCard(
                       title: 'Mentores e conselho',
                       subtitle: 'Apoio estratégico da startup',
                       child: Column(
@@ -526,7 +528,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 18),
-                    _SectionCard(
+                    AppSectionCard(
                       title: 'Documentos públicos',
                       subtitle: 'Materiais essenciais para análise do investidor',
                       child: Column(
@@ -546,7 +548,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                       ),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState == ConnectionState.waiting) {
-                          return _SectionCard(
+                          return AppSectionCard(
                             title: 'Perguntas públicas',
                             subtitle: 'Dúvidas dos usuários e respostas da startup',
                             child: const Center(
@@ -558,7 +560,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                         }
 
                         if (snapshot.hasError) {
-                          return _SectionCard(
+                          return AppSectionCard(
                             title: 'Perguntas públicas',
                             subtitle: 'Dúvidas dos usuários e respostas da startup',
                             child: Text(
@@ -593,7 +595,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                       },
                     ),
                     const SizedBox(height: 18),
-                    _SectionCard(
+                    AppSectionCard(
                       title: 'Vídeo demonstrativo',
                       subtitle: 'Pitch ou demonstração do produto',
                       child: Container(
@@ -852,21 +854,19 @@ class _TokenOverviewCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _InfoCard(
+                child: AppMetricCard(
                   label: 'Preço atual',
                   value:
                   'R\$ ${currentPrice.toStringAsFixed(2).replaceAll('.', ',')}',
-                  highlight: true,
                   icon: Icons.payments_rounded,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _InfoCard(
+                child: AppMetricCard(
                   label: 'Variação',
                   value:
                   '${isPositive ? '+' : ''}${variation.toStringAsFixed(1)}%',
-                  highlight: true,
                   icon: Icons.show_chart_rounded,
                 ),
               ),
@@ -1004,7 +1004,7 @@ class _QuestionsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SectionCard(
+    return AppSectionCard(
       title: 'Perguntas públicas',
       subtitle: 'Dúvidas dos usuários e respostas da startup',
       child: Column(
@@ -1468,148 +1468,6 @@ class _StartupLineChartPainter extends CustomPainter {
   }
 }
 
-class _InfoCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool highlight;
-  final IconData? icon;
-
-  const _InfoCard({
-    required this.label,
-    required this.value,
-    this.highlight = false,
-    this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 118,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.04),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              height: 36,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (icon != null) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(top: 1),
-                      child: Icon(
-                        icon,
-                        color: highlight
-                            ? AppColors.primaryLight
-                            : AppColors.textSecondary,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  Expanded(
-                    child: Text(
-                      label,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        height: 1.15,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: SizedBox(
-                height: 34,
-                width: double.infinity,
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      value,
-                      maxLines: 1,
-                      style: TextStyle(
-                        color: highlight ? AppColors.primaryLight : Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        height: 1,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final String? subtitle;
-  final Widget child;
-
-  const _SectionCard({
-    required this.title,
-    required this.child,
-    this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 21,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 5),
-            Text(
-              subtitle!,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-          ],
-          const SizedBox(height: 14),
-          child,
-        ],
-      ),
-    );
-  }
-}
 
 class _MemberRow extends StatelessWidget {
   final StartupSocietyMember member;
