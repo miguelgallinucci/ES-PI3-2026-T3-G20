@@ -4,6 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../services/wallet_service.dart';
+import '../../../shared/widgets/app_background.dart';
+import '../../../shared/widgets/app_loading.dart';
+import '../../../shared/widgets/app_error_state.dart';
+import '../../../shared/widgets/page_header.dart';
 
 /// Widget principal da página de portfólio
 /// Responsável por exibir a carteira de investimentos do usuário
@@ -235,18 +239,7 @@ class _WalletPageState extends State<WalletPage> {
   Widget build(BuildContext context) {
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF04111D),
-              Color(0xFF071A2B),
-              Color(0xFF0A2235),
-            ],
-          ),
-        ),
+      body: AppBackground(
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -260,8 +253,8 @@ class _WalletPageState extends State<WalletPage> {
                         ConnectionState.waiting) {
                       return const Padding(
                         padding: EdgeInsets.only(top: 120),
-                        child: CircularProgressIndicator(
-                          color: AppColors.primary,
+                        child: AppLoading(
+                          message: 'Carregando sua carteira...',
                         ),
                       );
                     }
@@ -269,9 +262,9 @@ class _WalletPageState extends State<WalletPage> {
                     if (userSnapshot.hasError) {
                       return const Padding(
                         padding: EdgeInsets.only(top: 120),
-                        child: Text(
-                          'Erro ao carregar dados da carteira.',
-                          style: TextStyle(color: Colors.white),
+                        child: AppErrorState(
+                          title: 'Ops!',
+                          message: 'Erro ao carregar dados da carteira.',
                         ),
                       );
                     }
@@ -284,35 +277,10 @@ class _WalletPageState extends State<WalletPage> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: () => Navigator.pop(context),
-                              icon: const Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Minha carteira',
-                          style: TextStyle(
-                            fontSize: 30,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'Gerencie seu saldo, acompanhe seus tokens e visualize suas movimentações.',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: AppColors.textSecondary,
-                            height: 1.5,
-                          ),
+                        PageHeader(
+                          title: 'Minha carteira',
+                          subtitle: 'Gerencie seu saldo, acompanhe seus tokens e visualize suas movimentações.',
+                          onBack: () => Navigator.pop(context),
                         ),
                         const SizedBox(height: 24),
                         Container(

@@ -8,6 +8,10 @@ import '../../../core/theme/app_colors.dart';
 import '../../auth/pages/login_page.dart';
 import '../../dashboard/pages/dashboard_page.dart';
 import '../../wallet/pages/wallet_page.dart';
+import '../../../shared/widgets/app_background.dart';
+import '../../../shared/widgets/app_loading.dart';
+import '../../../shared/widgets/app_error_state.dart';
+import '../../../shared/widgets/page_header.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -75,18 +79,7 @@ class ProfilePage extends StatelessWidget {
     final userStream = _watchCurrentUserData();
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF04111D),
-              Color(0xFF071A2B),
-              Color(0xFF0A2235),
-            ],
-          ),
-        ),
+      body: AppBackground(
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -96,14 +89,19 @@ class ProfilePage extends StatelessWidget {
                 child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                   stream: userStream,
                   builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.only(top: 100),
+                        child: AppLoading(message: 'Carregando perfil...'),
+                      );
+                    }
+
                     if (snapshot.hasError) {
                       return const Padding(
-                        padding: EdgeInsets.only(top: 120),
-                        child: Center(
-                          child: Text(
-                            'Erro ao carregar dados do perfil.',
-                            style: TextStyle(color: Colors.white),
-                          ),
+                        padding: EdgeInsets.only(top: 100),
+                        child: AppErrorState(
+                          title: 'Ops!',
+                          message: 'Erro ao carregar dados do perfil.',
                         ),
                       );
                     }
@@ -116,14 +114,11 @@ class ProfilePage extends StatelessWidget {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            color: Colors.white,
-                          ),
+                        PageHeader(
+                          title: 'Perfil',
+                          onBack: () => Navigator.pop(context),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 24),
                         const Center(
                           child: CircleAvatar(
                             radius: 38,
