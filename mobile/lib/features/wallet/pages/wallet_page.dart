@@ -1,4 +1,4 @@
-// Página de Portfólio (Carteira)
+// Página de Carteira
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 

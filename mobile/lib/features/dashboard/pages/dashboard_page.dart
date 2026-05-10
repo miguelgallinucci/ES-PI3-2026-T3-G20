@@ -160,7 +160,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Atual: R\$ ${_formatCurrency(currentValue)}',
+                          'Atual: ${AppFormatters.currency(currentValue)}',
                           style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 13,
@@ -184,7 +184,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       Expanded(
                         child: AppMetricCard(
                           label: 'Valor atual',
-                          value: 'R\$ ${_formatCurrency(currentValue)}',
+                          value: AppFormatters.currency(currentValue),
                           icon: Icons.account_balance_wallet_rounded,
                         ),
                       ),
@@ -612,15 +612,3 @@ class _ReadableLineChartPainter extends CustomPainter {
         oldDelegate.valuePrefix != valuePrefix;
   }
 }
-
-
-
-String _formatCurrency(double value) {
-  return value
-      .toStringAsFixed(0)
-      .replaceAllMapped(
-        RegExp(r'\B(?=(\d{3})+(?!\d))'),
-        (match) => '.',
-      );
-}
-
