@@ -1,12 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart'; // Mantido para o catch de FirebaseFunctionsException
 
 import '../../../core/theme/app_colors.dart';
 import '../../catalog/pages/catalog_page.dart';
 import '../../wallet/pages/wallet_page.dart';
 import '../models/startup_model.dart';
+import '../services/token_purchase_service.dart';
 
 class TokenPurchasePage extends StatefulWidget {
   final StartupModel startup;
@@ -26,7 +25,7 @@ class TokenPurchasePage extends StatefulWidget {
 
 class _TokenPurchasePageState extends State<TokenPurchasePage> {
   final TextEditingController quantityController = TextEditingController();
-  final FirebaseFunctions _functions = FirebaseFunctions.instance;
+  final TokenPurchaseService _purchaseService = TokenPurchaseService();
 
   double _saldoDisponivel = 0;
   bool _isLoadingSaldo = true;
@@ -68,31 +67,13 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
   }
 
   Future<void> _loadSaldoDisponivel() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-
-    if (uid == null) {
-      if (!mounted) return;
-
-      setState(() {
-        _saldoDisponivel = 0;
-        _isLoadingSaldo = false;
-      });
-
-      return;
-    }
-
     try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
-
-      final data = userDoc.data();
+      final saldo = await _purchaseService.getUserBalance();
 
       if (!mounted) return;
 
       setState(() {
-        _saldoDisponivel = _toDouble(data?['saldoFicticio']);
+        _saldoDisponivel = saldo;
         _isLoadingSaldo = false;
       });
     } catch (_) {
@@ -107,33 +88,9 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
     }
   }
 
-  double _toDouble(dynamic value) {
-    if (value == null) return 0;
-
-    if (value is int) return value.toDouble();
-
-    if (value is double) return value;
-
-    if (value is num) return value.toDouble();
-
-    if (value is String) {
-      return double.tryParse(
-        value
-            .replaceAll('R\$', '')
-            .replaceAll(' ', '')
-            .replaceAll('.', '')
-            .replaceAll(',', '.'),
-      ) ??
-          0;
-    }
-
-    return 0;
-  }
 
   Future<void> _confirmInvestment() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-
-    if (uid == null) {
+    if (_purchaseService.currentUserId == null) {
       _showMessage('Você precisa estar logado para investir.');
       return;
     }
@@ -153,12 +110,10 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
     });
 
     try {
-      final callable = _functions.httpsCallable('buyTokens');
-      
-      await callable.call({
-        'startupId': widget.startup.id,
-        'quantity': quantity,
-      });
+      await _purchaseService.buyTokens(
+        startupId: widget.startup.id,
+        quantity: quantity,
+      );
 
       if (!mounted) return;
 
