@@ -5,7 +5,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/app_section_card.dart';
 import '../../../core/theme/app_colors.dart';
-import '../pages/startup_detail_page.dart'; // Need this for StartupDocumentItem model until it's moved
+import '../models/startup_detail_models.dart';
 
 class StartupDocumentsSection extends StatelessWidget {
   final List<StartupDocumentItem> documents;

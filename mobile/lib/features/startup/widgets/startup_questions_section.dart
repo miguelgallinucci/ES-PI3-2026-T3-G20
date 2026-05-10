@@ -5,7 +5,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/app_section_card.dart';
 import '../../../core/theme/app_colors.dart';
-import '../pages/startup_detail_page.dart'; // Model reference
+import '../models/startup_detail_models.dart';
 
 class StartupQuestionsSection extends StatelessWidget {
   final TextEditingController controller;

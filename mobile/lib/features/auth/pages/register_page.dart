@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/app_input_formatters.dart';
 import '../../catalog/pages/catalog_page.dart';
 import '../services/auth_service.dart';
 import '../../../shared/widgets/app_button.dart';
@@ -248,7 +249,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             keyboardType: TextInputType.number,
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
-                              CpfInputFormatter(),
+                              AppCpfInputFormatter(),
                             ],
                           ),
                           const SizedBox(height: 18),
@@ -259,7 +260,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             keyboardType: TextInputType.phone,
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
-                              PhoneInputFormatter(),
+                              AppPhoneInputFormatter(),
                             ],
                           ),
                           const SizedBox(height: 18),
@@ -340,55 +341,6 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class CpfInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    var text = newValue.text.replaceAll(RegExp(r'\D'), '');
-    if (text.length > 11) text = text.substring(0, 11);
-
-    var formatted = '';
-    for (var i = 0; i < text.length; i++) {
-      if (i == 3 || i == 6) formatted += '.';
-      if (i == 9) formatted += '-';
-      formatted += text[i];
-    }
-
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}
-
-class PhoneInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    var text = newValue.text.replaceAll(RegExp(r'\D'), '');
-    if (text.length > 11) text = text.substring(0, 11);
-
-    var formatted = '';
-    if (text.isNotEmpty) {
-      formatted += '(';
-      for (var i = 0; i < text.length; i++) {
-        if (i == 2) formatted += ') ';
-        if (i == 7) formatted += '-';
-        formatted += text[i];
-      }
-    }
-
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
