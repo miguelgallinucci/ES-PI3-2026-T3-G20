@@ -11,6 +11,7 @@ import '../../../shared/widgets/page_header.dart';
 import '../widgets/wallet_history_item.dart';
 import '../widgets/wallet_summary_section.dart';
 import '../widgets/wallet_deposit_sheet.dart';
+import '../../../core/utils/app_formatters.dart';
 
 /// Widget principal da página de portfólio
 /// Responsável por exibir a carteira de investimentos do usuário
@@ -34,32 +35,6 @@ class _WalletPageState extends State<WalletPage> {
   }
 
 
-  /// Formata um valor numérico para o padrão de moeda brasileira (R$)
-  /// Exemplo: 1000.50 -> R$ 1000,50
-  String _formatCurrency(double value) {
-    return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
-  }
-
-  String _formatNegativeCurrency(double value) {
-    final positiveValue = value.abs();
-    return '-R\$ ${positiveValue.toStringAsFixed(2).replaceAll('.', ',')}';
-  }
-
-  /// Formata uma data do Firestore para o padrão brasileiro (DD/MM/YYYY)
-  /// Se o timestamp for null, retorna 'Agora'
-  String _formatDate(Timestamp? timestamp) {
-    if (timestamp == null) {
-      return 'Agora';
-    }
-
-    final date = timestamp.toDate();
-
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    final year = date.year.toString();
-
-    return '$day/$month/$year';
-  }
 
   Future<void> _showAddBalanceModal() async {
     final selectedAmount = await showModalBottomSheet<double>(
@@ -86,7 +61,7 @@ class _WalletPageState extends State<WalletPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Saldo de ${_formatCurrency(selectedAmount)} adicionado.',
+            'Saldo de ${AppFormatters.currency(selectedAmount)} adicionado.',
           ),
         ),
       );
@@ -152,7 +127,7 @@ class _WalletPageState extends State<WalletPage> {
                           onBack: () => Navigator.pop(context),
                         ),
                         WalletSummarySection(
-                          availableBalance: _formatCurrency(balance),
+                          availableBalance: AppFormatters.currency(balance),
                           totalInvested: 'R\$ 0,00',
                           startupsCount: '0',
                           onAddBalance: _showAddBalanceModal,
@@ -295,9 +270,9 @@ class _WalletPageState extends State<WalletPage> {
                                   title: title.toString().replaceAll('simulado', '').trim(),
                                   subtitle: description.toString().replaceAll('simulado', '').trim(),
                                   value: isCredit
-                                      ? _formatCurrency(amount.abs())
-                                      : _formatNegativeCurrency(amount.abs()),
-                                  date: _formatDate(createdAt),
+                                      ? AppFormatters.currency(amount.abs())
+                                      : AppFormatters.negativeCurrency(amount.abs()),
+                                  date: AppFormatters.formatDate(createdAt),
                                   isCredit: isCredit,
                                 );
                               }).toList(),

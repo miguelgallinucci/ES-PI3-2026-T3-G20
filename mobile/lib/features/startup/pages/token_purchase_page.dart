@@ -6,6 +6,7 @@ import '../../catalog/pages/catalog_page.dart';
 import '../../wallet/pages/wallet_page.dart';
 import '../models/startup_model.dart';
 import '../services/token_purchase_service.dart';
+import '../../../core/utils/app_formatters.dart';
 
 class TokenPurchasePage extends StatefulWidget {
   final StartupModel startup;
@@ -263,7 +264,7 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
                                   label: 'Saldo disponível',
                                   value: _isLoadingSaldo
                                       ? 'Carregando...'
-                                      : _formatCurrency(_saldoDisponivel),
+                                      : AppFormatters.currency(_saldoDisponivel),
                                 ),
                               ),
                             ],
@@ -359,7 +360,7 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
                                 ),
                                 _SummaryRow(
                                   label: 'Valor total',
-                                  value: _formatCurrency(totalValue),
+                                  value: AppFormatters.currency(totalValue),
                                   highlight: true,
                                 ),
                               ],
@@ -405,10 +406,6 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
     );
   }
 
-  String _formatCurrency(double value) {
-    final fixed = value.toStringAsFixed(2).replaceAll('.', ',');
-    return 'R\$ $fixed';
-  }
 
   void _goToCatalog(BuildContext pageContext, BuildContext dialogContext) {
     Navigator.of(dialogContext).pop();

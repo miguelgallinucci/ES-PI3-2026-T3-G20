@@ -16,6 +16,7 @@ import '../../../shared/widgets/app_background.dart';
 import '../../../shared/widgets/page_header.dart';
 import '../../../shared/widgets/app_loading.dart';
 import '../../../shared/widgets/app_error_state.dart';
+import '../../../core/utils/app_formatters.dart';
 
 class CatalogPage extends StatefulWidget {
   const CatalogPage({super.key});
@@ -205,7 +206,7 @@ class _CatalogPageState extends State<CatalogPage> {
                         userPositions: userPositions,
                         totalTokensInWallet: totalTokensInWallet,
                         estimatedWalletValue: estimatedWalletValue,
-                        formatCurrency: _formatCurrency,
+                        formatCurrency: AppFormatters.currency,
                         onBuyOffer: (offer) =>
                             _showBuyOfferDialog(context, offer),
                         onSellPosition: (position) =>
@@ -392,9 +393,6 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
-  String _formatCurrency(double value) {
-    return 'R\$ ${value.toStringAsFixed(2).replaceAll('.', ',')}';
-  }
 
   void _showBuyOfferDialog(BuildContext context, AvailableOffer offer) {
     final total = offer.quantity * offer.unitPrice;
@@ -409,7 +407,7 @@ class _CatalogPageState extends State<CatalogPage> {
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          'Você está comprando ${offer.quantity} tokens da ${offer.startup} por ${_formatCurrency(total)}.',
+          'Você está comprando ${offer.quantity} tokens da ${offer.startup} por ${AppFormatters.currency(total)}.',
           style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
         ),
         actions: [
@@ -473,7 +471,7 @@ class _CatalogPageState extends State<CatalogPage> {
       builder: (sheetContext) {
         return CatalogSellOfferSheet(
           position: position,
-          formatCurrency: _formatCurrency,
+          formatCurrency: AppFormatters.currency,
           inputDecoration: _inputDecoration,
           onPublish: ({
             required UserTokenPosition position,
@@ -509,7 +507,7 @@ class _CatalogPageState extends State<CatalogPage> {
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          'Sua oferta de venda de $quantity tokens da ${position.startup} foi registrada por ${_formatCurrency(price)} cada, totalizando ${_formatCurrency(total)}.',
+          'Sua oferta de venda de $quantity tokens da ${position.startup} foi registrada por ${AppFormatters.currency(price)} cada, totalizando ${AppFormatters.currency(total)}.',
           style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
         ),
         actions: [

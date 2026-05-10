@@ -6,6 +6,7 @@ import '../../../shared/widgets/app_section_card.dart';
 import '../../../shared/widgets/app_metric_card.dart';
 import '../widgets/dashboard_period_selector.dart';
 import '../widgets/dashboard_trend_badge.dart';
+import '../../../core/utils/app_formatters.dart';
 
 enum DashboardPeriod {
   day,
@@ -320,7 +321,7 @@ class _WalletLineChartState extends State<WalletLineChart> {
               labels: widget.labels,
               selectedIndex: _selectedIndex,
               valuePrefix: 'R\$ ',
-              valueFormatter: _formatCompactCurrency,
+              valueFormatter: AppFormatters.compactCurrency,
             ),
             child: Container(),
           ),
@@ -623,11 +624,3 @@ String _formatCurrency(double value) {
       );
 }
 
-String _formatCompactCurrency(double value) {
-  if (value.abs() >= 1000) {
-    final compact = value / 1000;
-    return '${compact.toStringAsFixed(1).replaceAll('.', ',')}k';
-  }
-
-  return value.toStringAsFixed(0);
-}
