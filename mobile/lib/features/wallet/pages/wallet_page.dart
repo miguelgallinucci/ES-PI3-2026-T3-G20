@@ -123,7 +123,6 @@ class _WalletPageState extends State<WalletPage> {
                       children: [
                         PageHeader(
                           title: 'Minha carteira',
-                          subtitle: 'Gerencie seu saldo, acompanhe seus tokens e visualize suas movimentações.',
                           onBack: () => Navigator.pop(context),
                         ),
                         WalletSummarySection(

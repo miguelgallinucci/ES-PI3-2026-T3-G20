@@ -3,6 +3,7 @@
 // Isola o BottomSheet da carteira e controla a interface de valores rápidos,
 // campo de entrada e confirmação do aporte simulado.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
 
 class WalletDepositSheet extends StatefulWidget {
@@ -100,6 +101,9 @@ class _WalletDepositSheetState extends State<WalletDepositSheet> {
           TextField(
             controller: _amountController,
             keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
+            ],
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _submitTypedValue(),
             style: const TextStyle(color: Colors.white),

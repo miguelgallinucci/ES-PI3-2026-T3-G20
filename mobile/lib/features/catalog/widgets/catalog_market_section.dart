@@ -72,7 +72,7 @@ class CatalogMarketSection extends StatelessWidget {
           children: [
             const Expanded(
               child: _MarketInfoCard(
-                label: 'Saldo fictício',
+                label: 'Saldo',
                 value: 'R\$ 5.000,00',
               ),
             ),

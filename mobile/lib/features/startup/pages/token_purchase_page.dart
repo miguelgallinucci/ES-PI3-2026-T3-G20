@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_functions/cloud_functions.dart'; // Mantido para o catch de FirebaseFunctionsException
 
 import '../../../core/theme/app_colors.dart';
@@ -282,6 +283,7 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
                           TextField(
                             controller: quantityController,
                             keyboardType: TextInputType.number,
+                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                             onChanged: (_) => setState(() {}),
                             decoration: InputDecoration(
                               hintText: 'Ex: 10',
@@ -460,21 +462,38 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
           ),
         ),
         actions: [
-          ElevatedButton(
-            onPressed: () => _goToWallet(pageContext, dialogContext),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Ver carteira'),
-          ),
-          ElevatedButton(
-            onPressed: () => _goToCatalog(pageContext, dialogContext),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Voltar ao catálogo'),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => _goToWallet(pageContext, dialogContext),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Ver carteira', style: TextStyle(fontSize: 13)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => _goToCatalog(pageContext, dialogContext),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Catálogo', style: TextStyle(fontSize: 13)),
+                ),
+              ),
+            ],
           ),
         ],
       ),

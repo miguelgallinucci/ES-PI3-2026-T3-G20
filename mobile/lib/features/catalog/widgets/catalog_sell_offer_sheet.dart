@@ -3,6 +3,7 @@
 // Isola o BottomSheet do balcão de negociações e controla internamente
 // os TextEditingControllers usados no formulário.
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
 import 'catalog_market_offer_card.dart'; // Para MiniInfo
 import 'catalog_user_position_card.dart'; // Para UserTokenPosition e SummaryRow
@@ -215,6 +216,7 @@ class _CatalogSellOfferSheetState extends State<CatalogSellOfferSheet> {
               TextField(
                 controller: sellQuantityController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: (_) => setState(() {}),
                 decoration: widget.inputDecoration(
                   'Máximo: ${widget.position.tokensOwned} tokens',
@@ -247,6 +249,9 @@ class _CatalogSellOfferSheetState extends State<CatalogSellOfferSheet> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
+                ],
                 onChanged: (_) => setState(() {}),
                 decoration: widget.inputDecoration(
                   'Valor atual: ${widget.formatCurrency(widget.position.currentPrice)}',

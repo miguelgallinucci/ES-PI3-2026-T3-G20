@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../catalog/pages/catalog_page.dart';
 import '../services/auth_service.dart';
@@ -228,48 +229,49 @@ class _RegisterPageState extends State<RegisterPage> {
 
                           // Campo para o nome completo do usuário
                           AppInput(
-                            label: 'Nome completo',
+                            label: 'Nome completo *',
                             hint: 'Seu nome completo',
                             controller: _fullNameController,
                           ),
                           const SizedBox(height: 18),
-
-                          // Campo para o email usado no cadastro
                           AppInput(
-                            label: 'Email',
+                            label: 'Email *',
                             hint: 'seu@email.com',
                             controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
                           ),
                           const SizedBox(height: 18),
-
-                          // Campo para o CPF do usuário
                           AppInput(
-                            label: 'CPF',
+                            label: 'CPF *',
                             hint: '000.000.000-00',
                             controller: _cpfController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              CpfInputFormatter(),
+                            ],
                           ),
                           const SizedBox(height: 18),
-
-                          // Campo para o telefone de contato
                           AppInput(
-                            label: 'Telefone',
+                            label: 'Telefone *',
                             hint: '(00) 00000-0000',
                             controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              PhoneInputFormatter(),
+                            ],
                           ),
                           const SizedBox(height: 18),
-
-                          // Campo de senha para o novo usuário
                           AppInput(
-                            label: 'Senha',
+                            label: 'Senha *',
                             hint: '••••••••',
                             obscureText: true,
                             controller: _passwordController,
                           ),
                           const SizedBox(height: 18),
-
-                          // Campo para confirmar a senha digitada
                           AppInput(
-                            label: 'Confirmar senha',
+                            label: 'Confirmar senha *',
                             hint: '••••••••',
                             obscureText: true,
                             controller: _confirmPasswordController,
@@ -338,6 +340,55 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class CpfInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var text = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (text.length > 11) text = text.substring(0, 11);
+
+    var formatted = '';
+    for (var i = 0; i < text.length; i++) {
+      if (i == 3 || i == 6) formatted += '.';
+      if (i == 9) formatted += '-';
+      formatted += text[i];
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
+class PhoneInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var text = newValue.text.replaceAll(RegExp(r'\D'), '');
+    if (text.length > 11) text = text.substring(0, 11);
+
+    var formatted = '';
+    if (text.isNotEmpty) {
+      formatted += '(';
+      for (var i = 0; i < text.length; i++) {
+        if (i == 2) formatted += ') ';
+        if (i == 7) formatted += '-';
+        formatted += text[i];
+      }
+    }
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
