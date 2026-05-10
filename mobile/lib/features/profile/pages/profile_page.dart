@@ -3,6 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../services/profile_service.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../auth/pages/login_page.dart';
@@ -14,10 +15,12 @@ import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/page_header.dart';
 
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
+  final ProfileService _profileService = ProfileService();
+
+  ProfilePage({super.key});
 
   Future<void> _logout(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
+    await _profileService.signOut();
 
     if (!context.mounted) return;
 
@@ -25,7 +28,7 @@ class ProfilePage extends StatelessWidget {
       MaterialPageRoute(
         builder: (_) => const LoginPage(),
       ),
-          (route) => false,
+      (route) => false,
     );
   }
 
@@ -63,20 +66,11 @@ class ProfilePage extends StatelessWidget {
     return 'E-mail não informado';
   }
 
-  Stream<DocumentSnapshot<Map<String, dynamic>>>? _watchCurrentUserData() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-
-    if (uid == null) {
-      return null;
-    }
-
-    return FirebaseFirestore.instance.collection('users').doc(uid).snapshots();
-  }
 
   @override
   Widget build(BuildContext context) {
-    final firebaseUser = FirebaseAuth.instance.currentUser;
-    final userStream = _watchCurrentUserData();
+    final firebaseUser = _profileService.currentUser;
+    final userStream = _profileService.watchCurrentUserProfile();
 
     return Scaffold(
       body: AppBackground(

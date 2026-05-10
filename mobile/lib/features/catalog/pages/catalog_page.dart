@@ -145,7 +145,7 @@ class _CatalogPageState extends State<CatalogPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const ProfilePage(),
+                              builder: (_) => ProfilePage(),
                             ),
                           );
                         },
