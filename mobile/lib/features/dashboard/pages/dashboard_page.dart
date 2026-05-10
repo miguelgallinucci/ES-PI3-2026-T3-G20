@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../shared/widgets/app_background.dart';
+import '../../../shared/widgets/page_header.dart';
+import '../../../shared/widgets/app_section_card.dart';
+import '../../../shared/widgets/app_metric_card.dart';
+import '../widgets/dashboard_period_selector.dart';
+import '../widgets/dashboard_trend_badge.dart';
 
 enum DashboardPeriod {
   day,
@@ -100,185 +106,140 @@ class _DashboardPageState extends State<DashboardPage> {
     final isPositive = variation >= 0;
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF04111D),
-              Color(0xFF071A2B),
-              Color(0xFF0A2235),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        color: Colors.white,
-                      ),
-                      padding: EdgeInsets.zero,
-                      alignment: Alignment.centerLeft,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Desempenho da carteira',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    const Text(
-                      'Acompanhe a evolucao dos seus investimentos por periodo, com valores e pontos de referencia no grafico.',
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: AppColors.textSecondary,
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 22),
-                    _DashboardPeriodSelector(
-                      selectedPeriod: _selectedPeriod,
-                      onPeriodChanged: (period) {
-                        setState(() {
-                          _selectedPeriod = period;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.04),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Expanded(
-                                child: Text(
-                                  'Evolucao do patrimonio',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+      body: AppBackground(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  PageHeader(
+                    title: 'Desempenho da carteira',
+                    subtitle:
+                        'Acompanhe a evolucao dos seus investimentos por periodo, com valores e pontos de referencia no grafico.',
+                    onBack: () => Navigator.pop(context),
+                  ),
+                  const SizedBox(height: 22),
+                  DashboardPeriodSelector(
+                    selectedPeriod: _selectedPeriod,
+                    onPeriodChanged: (period) {
+                      setState(() {
+                        _selectedPeriod = period;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  AppSectionCard(
+                    title: 'Evolucao do patrimonio',
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '${isPositive ? '+' : ''}${variation.toStringAsFixed(1)}% $_periodLabel',
+                                style: TextStyle(
+                                  color: isPositive
+                                      ? AppColors.primaryLight
+                                      : Colors.redAccent,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
-                              _TrendBadge(
-                                value: variation,
-                                isPositive: isPositive,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${isPositive ? '+' : ''}${variation.toStringAsFixed(1)}% $_periodLabel',
-                            style: TextStyle(
-                              color: isPositive
-                                  ? AppColors.primaryLight
-                                  : Colors.redAccent,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
                             ),
+                            DashboardTrendBadge(
+                               value: variation,
+                               isPositive: isPositive,
+                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Atual: R\$ ${_formatCurrency(currentValue)}',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Atual: R\$ ${_formatCurrency(currentValue)}',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        ),
+                        const SizedBox(height: 22),
+                        SizedBox(
+                          height: 260,
+                          child: WalletLineChart(
+                            values: values,
+                            labels: labels,
                           ),
-                          const SizedBox(height: 22),
-                          SizedBox(
-                            height: 260,
-                            child: WalletLineChart(
-                              values: values,
-                              labels: labels,
-                            ),
-                          ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: AppMetricCard(
+                          label: 'Valor atual',
+                          value: 'R\$ ${_formatCurrency(currentValue)}',
+                          icon: Icons.account_balance_wallet_rounded,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 22),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MetricCard(
-                            label: 'Valor atual',
-                            value: 'R\$ ${_formatCurrency(currentValue)}',
-                          ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: AppMetricCard(
+                          label: 'Rentabilidade',
+                          value:
+                              '${isPositive ? '+' : ''}${variation.toStringAsFixed(1)}%',
+                          icon: Icons.trending_up_rounded,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _MetricCard(
-                            label: 'Rentabilidade',
-                            value:
-                                '${isPositive ? '+' : ''}${variation.toStringAsFixed(1)}%',
-                            highlight: true,
-                          ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Row(
+                    children: [
+                      Expanded(
+                        child: AppMetricCard(
+                          label: 'Melhor ativo',
+                          value: 'GreenVolt',
+                          icon: Icons.star_rounded,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Row(
-                      children: [
-                        Expanded(
-                          child: _MetricCard(
-                            label: 'Melhor ativo',
-                            value: 'GreenVolt',
-                          ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: AppMetricCard(
+                          label: 'Startups',
+                          value: '3',
+                          icon: Icons.business_rounded,
                         ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: _MetricCard(
-                            label: 'Startups',
-                            value: '3',
-                          ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Row(
+                    children: [
+                      Expanded(
+                        child: AppMetricCard(
+                          label: 'Maior alta',
+                          value: '+21,5%',
+                          icon: Icons.arrow_upward_rounded,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Row(
-                      children: [
-                        Expanded(
-                          child: _MetricCard(
-                            label: 'Maior alta',
-                            value: '+21,5%',
-                            highlight: true,
-                          ),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: AppMetricCard(
+                          label: 'Aporte total',
+                          value: 'R\$ 12.500',
+                          icon: Icons.savings_rounded,
                         ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: _MetricCard(
-                            label: 'Aporte total',
-                            value: 'R\$ 12.500',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
           ),
@@ -288,99 +249,6 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 }
 
-class _DashboardPeriodSelector extends StatelessWidget {
-  final DashboardPeriod selectedPeriod;
-  final ValueChanged<DashboardPeriod> onPeriodChanged;
-
-  const _DashboardPeriodSelector({
-    required this.selectedPeriod,
-    required this.onPeriodChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.035),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: const [
-          _DashboardPeriodButton(label: 'Dia', period: DashboardPeriod.day),
-          _DashboardPeriodButton(label: 'Semana', period: DashboardPeriod.week),
-          _DashboardPeriodButton(label: 'Mes', period: DashboardPeriod.month),
-          _DashboardPeriodButton(label: '6M', period: DashboardPeriod.sixMonths),
-          _DashboardPeriodButton(label: 'Ano', period: DashboardPeriod.year),
-        ].map((button) {
-          return Expanded(
-            child: _DashboardPeriodButtonHost(
-              button: button,
-              selectedPeriod: selectedPeriod,
-              onPeriodChanged: onPeriodChanged,
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-}
-
-class _DashboardPeriodButtonHost extends StatelessWidget {
-  final _DashboardPeriodButton button;
-  final DashboardPeriod selectedPeriod;
-  final ValueChanged<DashboardPeriod> onPeriodChanged;
-
-  const _DashboardPeriodButtonHost({
-    required this.button,
-    required this.selectedPeriod,
-    required this.onPeriodChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isSelected = selectedPeriod == button.period;
-
-    return GestureDetector(
-      onTap: () => onPeriodChanged(button.period),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.22)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.55)
-                : Colors.transparent,
-          ),
-        ),
-        child: Text(
-          button.label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isSelected ? AppColors.primaryLight : AppColors.textSecondary,
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DashboardPeriodButton {
-  final String label;
-  final DashboardPeriod period;
-
-  const _DashboardPeriodButton({
-    required this.label,
-    required this.period,
-  });
-}
 
 class WalletLineChart extends StatefulWidget {
   final List<double> values;
@@ -744,98 +612,7 @@ class _ReadableLineChartPainter extends CustomPainter {
   }
 }
 
-class _TrendBadge extends StatelessWidget {
-  final double value;
-  final bool isPositive;
 
-  const _TrendBadge({
-    required this.value,
-    required this.isPositive,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: (isPositive ? AppColors.primary : Colors.redAccent)
-            .withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isPositive ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-            color: isPositive ? AppColors.primaryLight : Colors.redAccent,
-            size: 16,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            '${isPositive ? '+' : ''}${value.toStringAsFixed(1)}%',
-            style: TextStyle(
-              color: isPositive ? AppColors.primaryLight : Colors.redAccent,
-              fontWeight: FontWeight.w800,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MetricCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool highlight;
-
-  const _MetricCard({
-    required this.label,
-    required this.value,
-    this.highlight = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 8),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: Text(
-              value,
-              maxLines: 1,
-              style: TextStyle(
-                color: highlight ? AppColors.primaryLight : Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 String _formatCurrency(double value) {
   return value
