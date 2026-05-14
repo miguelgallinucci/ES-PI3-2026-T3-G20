@@ -27,6 +27,9 @@ class _LoginPageState extends State<LoginPage> {
   // Controladores para os campos de email e senha
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _smsCodeController = TextEditingController();
+  final TextEditingController _twoFactorPhoneController = TextEditingController();
+  static const String _simulatedTwoFactorCode = '123456';
 
   // Estado de carregamento, visibilidade de senha e mensagem de erro
   bool _isLoading = false;
@@ -38,6 +41,8 @@ class _LoginPageState extends State<LoginPage> {
     // Libera os recursos dos controladores de texto ao descartar o widget
     _emailController.dispose();
     _passwordController.dispose();
+    _smsCodeController.dispose();
+    _twoFactorPhoneController.dispose();
     super.dispose();
   }
 
@@ -68,12 +73,7 @@ class _LoginPageState extends State<LoginPage> {
 
       if (!mounted) return;
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const CatalogPage(),
-        ),
-      );
+      await _startSimulatedTwoFactorAuthentication();
     } on FirebaseAuthException catch (error) {
       setState(() {
         _errorMessage = _getFirebaseErrorMessage(error.code);
@@ -91,6 +91,477 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  //
+
+  Future<void> _startSimulatedTwoFactorAuthentication() async {
+    final phone = await _showPhoneDialog();
+
+    if (phone == null || phone.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Informe um telefone para receber o código de verificação.';
+      });
+      return;
+    }
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Código de verificação enviado.',
+        ),
+      ),
+    );
+
+    final smsCode = await _showSmsCodeDialog();
+
+    if (smsCode == null || smsCode.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Digite o código de verificação para continuar.';
+      });
+      return;
+    }
+
+    if (smsCode != _simulatedTwoFactorCode) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Código de verificação incorreto.';
+      });
+      return;
+    }
+
+    await _authService.markMfaEnabled();
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const CatalogPage(),
+      ),
+    );
+  }
+
+  Future<String?> _showPhoneDialog() async {
+    _twoFactorPhoneController.clear();
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 22),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0B1D2D).withValues(alpha: 0.96),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.12),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.42),
+                      blurRadius: 34,
+                      offset: const Offset(0, 18),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: AppColors.textSecondary,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Container(
+                        width: 76,
+                        height: 76,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.primaryLight.withValues(alpha: 0.24),
+                              AppColors.primary.withValues(alpha: 0.10),
+                            ],
+                          ),
+                          border: Border.all(
+                            color: AppColors.primaryLight.withValues(alpha: 0.45),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.18),
+                              blurRadius: 24,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.phone_in_talk_outlined,
+                          color: AppColors.primaryLight,
+                          size: 36,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    const Text(
+                      'Verifique seu telefone',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 25,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Informe seu número para receber o código de verificação.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 15,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.055),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.12),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 16),
+                          const Text(
+                            '🇧🇷',
+                            style: TextStyle(fontSize: 22),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            '+55',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: Colors.white.withValues(alpha: 0.55),
+                          ),
+                          Container(
+                            width: 1,
+                            height: 30,
+                            margin: const EdgeInsets.symmetric(horizontal: 14),
+                            color: Colors.white.withValues(alpha: 0.12),
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _twoFactorPhoneController,
+                              keyboardType: TextInputType.phone,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              decoration: InputDecoration(
+                                border: InputBorder.none,
+                                hintText: '(11) 99999-9999',
+                                hintStyle: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.35),
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      height: 58,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              AppColors.primary,
+                              AppColors.primaryLight,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.24),
+                              blurRadius: 18,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(
+                              context,
+                              _twoFactorPhoneController.text.trim(),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          child: const Text(
+                            'Enviar código',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Icon(
+                          Icons.shield_outlined,
+                          color: AppColors.textSecondary,
+                          size: 21,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Seus dados estão protegidos com segurança de nível bancário.',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13.5,
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<String?> _showSmsCodeDialog() async {
+    _smsCodeController.clear();
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 22),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(22, 18, 22, 24),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF0B1D2D).withValues(alpha: 0.96),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.12),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.42),
+                      blurRadius: 34,
+                      offset: const Offset(0, 18),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: AppColors.textSecondary,
+                          size: 28,
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Container(
+                        width: 76,
+                        height: 76,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              AppColors.primaryLight.withValues(alpha: 0.24),
+                              AppColors.primary.withValues(alpha: 0.10),
+                            ],
+                          ),
+                          border: Border.all(
+                            color: AppColors.primaryLight.withValues(alpha: 0.45),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.18),
+                              blurRadius: 24,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.lock_outline_rounded,
+                          color: AppColors.primaryLight,
+                          size: 36,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    const Text(
+                      'Código de segurança',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 25,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Digite o código recebido para concluir a autenticação em dois fatores.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 15,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    TextField(
+                      controller: _smsCodeController,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      maxLength: 6,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 7,
+                      ),
+                      decoration: InputDecoration(
+                        counterText: '',
+                        labelText: 'Código',
+                        labelStyle: const TextStyle(color: AppColors.textSecondary),
+                        filled: true,
+                        fillColor: Colors.white.withValues(alpha: 0.055),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: BorderSide(
+                            color: Colors.white.withValues(alpha: 0.12),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(18),
+                          borderSide: const BorderSide(color: AppColors.primaryLight),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      height: 58,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              AppColors.primary,
+                              AppColors.primaryLight,
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.24),
+                              blurRadius: 18,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context, _smsCodeController.text.trim());
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          child: const Text(
+                            'Verificar',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   /// Converte códigos de erro do Firebase em mensagens em português para o usuário.
   String _getFirebaseErrorMessage(String code) {
     switch (code) {
@@ -106,6 +577,16 @@ class _LoginPageState extends State<LoginPage> {
         return 'E-mail ou senha incorretos.';
       case 'too-many-requests':
         return 'Muitas tentativas. Aguarde um pouco e tente novamente.';
+      case 'invalid-phone-number':
+        return 'O número de telefone cadastrado não é válido.';
+      case 'invalid-verification-code':
+        return 'O código SMS informado está incorreto.';
+      case 'credential-already-in-use':
+        return 'Este telefone já está vinculado a outra conta.';
+      case 'provider-already-linked':
+        return 'Este telefone já está vinculado à sua conta.';
+      case 'quota-exceeded':
+        return 'Limite de envio de SMS excedido. Tente novamente mais tarde.';
       default:
         return 'Erro ao fazer login. Verifique os dados e tente novamente.';
     }
@@ -218,12 +699,12 @@ class _LoginPageState extends State<LoginPage> {
                                     ),
                                     child: const Center(
                                       child: Text(
-                                        'MI',
+                                        'PI3',
                                         style: TextStyle(
-                                          fontSize: 34,
-                                          fontWeight: FontWeight.bold,
+                                          fontSize: 30,
+                                          fontWeight: FontWeight.w900,
                                           color: Colors.white,
-                                          letterSpacing: 1,
+                                          letterSpacing: 0.5,
                                         ),
                                       ),
                                     ),
@@ -238,7 +719,7 @@ class _LoginPageState extends State<LoginPage> {
                             right: 0,
                             bottom: 18,
                             child: Text(
-                              'Bem-vindo ao seu\nfuturo',
+                              'Bem-vindo de volta',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 34,
@@ -256,7 +737,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     // Texto descritivo da aplicação
                     const Text(
-                      'Acompanhe startups, tokens e investimentos em um ambiente moderno e interativo.',
+                      'Acesse sua conta para continuar',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 16,

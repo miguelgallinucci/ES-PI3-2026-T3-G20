@@ -81,7 +81,34 @@ class AuthService {
 
     return document.data();
   }
+Future<String?> getCurrentUserPhone() async {
+  final userData = await getCurrentUserData();
 
+  if (userData == null) {
+    return null;
+  }
+
+  final phone = userData['phone'];
+
+  if (phone is String && phone.trim().isNotEmpty) {
+    return phone.trim();
+  }
+
+  return null;
+}
+
+Future<void> markMfaEnabled() async {
+  final user = _auth.currentUser;
+
+  if (user == null) {
+    return;
+  }
+
+  await _firestore.collection('users').doc(user.uid).update({
+    'mfaEnabled': true,
+    'mfaEnabledAt': FieldValue.serverTimestamp(),
+  });
+}
   Future<void> logout() async {
     await _auth.signOut();
   }

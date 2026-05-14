@@ -59,4 +59,5 @@ class DefaultFirebaseOptions {
     projectId: 'mesclainvest-pi3-c9519',
     storageBucket: 'mesclainvest-pi3-c9519.firebasestorage.app',
   );
+
 }
