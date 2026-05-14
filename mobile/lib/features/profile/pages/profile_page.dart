@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../services/profile_service.dart';
+import '../../auth/services/auth_service.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../auth/pages/login_page.dart';
@@ -14,10 +15,18 @@ import '../../../shared/widgets/app_loading.dart';
 import '../../../shared/widgets/app_error_state.dart';
 import '../../../shared/widgets/page_header.dart';
 
-class ProfilePage extends StatelessWidget {
-  final ProfileService _profileService = ProfileService();
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
 
-  ProfilePage({super.key});
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final ProfileService _profileService = ProfileService();
+  final AuthService _authService = AuthService();
+
+  bool _isUpdatingMfa = false;
 
   Future<void> _logout(BuildContext context) async {
     await _profileService.signOut();
@@ -104,6 +113,7 @@ class ProfilePage extends StatelessWidget {
 
                     final userName = _getUserName(userData, firebaseUser);
                     final userEmail = _getUserEmail(userData, firebaseUser);
+                    final isMfaEnabled = userData?['mfaEnabled'] == true;
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,12 +186,66 @@ class ProfilePage extends StatelessWidget {
                             );
                           },
                         ),
-                        _ActionCard(
-                          icon: Icons.security_rounded,
-                          title: 'Segurança',
-                          subtitle:
-                          'Configurações de acesso e proteção da conta.',
-                          onTap: () {},
+                        _SecurityMfaCard(
+                          enabled: isMfaEnabled,
+                          isLoading: _isUpdatingMfa,
+                          onChanged: (value) async {
+                            if (_isUpdatingMfa) return;
+
+                            setState(() {
+                              _isUpdatingMfa = true;
+                            });
+
+                            try {
+                              await _authService.setMfaEnabled(value);
+
+                              if (!context.mounted) return;
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: const Color(0xFF102235),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  content: Text(
+                                    value
+                                        ? 'Verificação em duas etapas ativada.'
+                                        : 'Verificação em duas etapas desativada.',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            } catch (_) {
+                              if (!context.mounted) return;
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: const Color(0xFF102235),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  content: const Text(
+                                    'Não foi possível atualizar a verificação em duas etapas.',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            } finally {
+                              if (mounted) {
+                                setState(() {
+                                  _isUpdatingMfa = false;
+                                });
+                              }
+                            }
+                          },
                         ),
                         _ActionCard(
                           icon: Icons.logout_rounded,
@@ -279,6 +343,166 @@ class _ActionCard extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SecurityMfaCard extends StatelessWidget {
+  final bool enabled;
+  final bool isLoading;
+  final ValueChanged<bool> onChanged;
+
+  const _SecurityMfaCard({
+    required this.enabled,
+    required this.isLoading,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: enabled
+              ? AppColors.primaryLight.withValues(alpha: 0.42)
+              : AppColors.border,
+        ),
+        boxShadow: enabled
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : [],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  enabled
+                      ? Icons.verified_user_rounded
+                      : Icons.security_rounded,
+                  color: AppColors.primaryLight,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Segurança',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'Configurações de acesso e proteção da conta.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.06),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary.withValues(alpha: 0.14),
+                  ),
+                  child: const Icon(
+                    Icons.phonelink_lock_rounded,
+                    color: AppColors.primaryLight,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Verificação em duas etapas',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        enabled
+                            ? 'Ativada para proteger sua conta no login.'
+                            : 'Ative uma camada extra de proteção no login.',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+                isLoading
+                    ? const SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: AppColors.primaryLight,
+                        ),
+                      )
+                    : Switch.adaptive(
+                        value: enabled,
+                        onChanged: onChanged,
+                        activeColor: AppColors.primaryLight,
+                        activeTrackColor:
+                            AppColors.primary.withValues(alpha: 0.36),
+                        inactiveThumbColor: Colors.white,
+                        inactiveTrackColor: Colors.white24,
+                      ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

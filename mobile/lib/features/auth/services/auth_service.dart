@@ -53,7 +53,6 @@ class AuthService {
         'phone': cleanPhone,
       });
     } catch (e) {
-      // Logamos o erro mas retornamos a credencial para não quebrar o fluxo de login automático do Auth
       debugPrint('Erro ao criar perfil no backend: $e');
     }
 
@@ -77,12 +76,30 @@ class AuthService {
       return null;
     }
 
-    final document = await _firestore
-        .collection('users')
-        .doc(user.uid)
-        .get();
+    final document = await _firestore.collection('users').doc(user.uid).get();
 
     return document.data();
+  }
+
+  Future<bool> isMfaEnabled() async {
+    final userData = await getCurrentUserData();
+    return userData?['mfaEnabled'] == true;
+  }
+
+  Future<void> setMfaEnabled(bool enabled) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      return;
+    }
+
+    await _firestore.collection('users').doc(user.uid).set(
+      {
+        'mfaEnabled': enabled,
+        'mfaUpdatedAt': FieldValue.serverTimestamp(),
+      },
+      SetOptions(merge: true),
+    );
   }
 
   Future<void> logout() async {
