@@ -1,1 +1,45 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"mesclainvest-pi3-c9519","appId":"1:342885785519:android:f014d70d569b1312c1195a","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"mesclainvest-pi3-c9519","configurations":{"android":"1:342885785519:android:f014d70d569b1312c1195a"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "mesclainvest-pi3-c9519",
+          "appId": "1:342885785519:android:f014d70d569b1312c1195a",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "mesclainvest-pi3-c9519",
+          "configurations": {
+            "android": "1:342885785519:android:f014d70d569b1312c1195a"
+          }
+        }
+      }
+    }
+  },
+  "functions": {
+    "source": "functions",
+    "predeploy": [
+      "cd \"$RESOURCE_DIR\" && ./node_modules/.bin/tsc"
+    ],
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log"
+    ]
+  },
+  "emulators": {
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true
+    },
+    "singleProjectMode": true
+  }
+}
