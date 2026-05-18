@@ -52,14 +52,14 @@ export const addSimulatedBalance = functions.https.onCall(async (data, context) 
                 userId: uid,
                 tipo: 'aporte_simulado',
                 valorTotal: amount,
-                descricao: 'Aporte simulado na carteira',
+                descricao: 'Crédito adicionado',
                 createdAt: admin.firestore.FieldValue.serverTimestamp()
             });
         });
 
         return { success: true };
     } catch (error) {
-        console.error('Error adding simulated balance:', error);
+        console.error('Erro ao adicionar saldo simulado:', error);
         if (error instanceof functions.https.HttpsError) {
             throw error;
         }
