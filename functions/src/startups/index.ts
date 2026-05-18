@@ -1,2 +1,2 @@
-// Exports for Startups functions
+// Exporta funções de Startups
 export * from './handlers/send_question';

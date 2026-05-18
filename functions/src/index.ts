@@ -1,9 +1,9 @@
 import * as admin from 'firebase-admin';
 
-// Initialize Firebase Admin app
+// Inicializa o Firebase Admin
 admin.initializeApp();
 
-// Export function modules
+// Exporta módulos das funções
 export * from './auth';
 export * from './startups';
 export * from './wallet';

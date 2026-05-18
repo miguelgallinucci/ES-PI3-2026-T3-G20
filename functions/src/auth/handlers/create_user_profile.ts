@@ -16,36 +16,25 @@ import { db } from '../../shared/firebase';
  * antes do SDK propagar o estado de autenticação.
  */
 export const createUserProfile = functions.https.onCall(async (data, context) => {
-  // Logs de diagnóstico (remover quando o fluxo estiver estável)
-  const dataKeys = data ? Object.keys(data) : [];
   const hasContextAuth = !!(context && context.auth);
   const hasIdToken = !!(data && data.idToken);
-
-  console.log('createUserProfile chamado', { dataKeys, hasContextAuth, hasIdToken });
 
   // Resolução de uid e email
   let uid: string;
   let email: string;
 
   if (hasContextAuth) {
-    // Caminho principal: o SDK do Firebase populou context.auth normalmente
+    // Caminho principal: o SDK do Firebase populou context.auth
     uid = context.auth!.uid;
     email = context.auth!.token.email || '';
-    console.log(`Auth via context.auth — uid=${uid}, email=${email}`);
   } else if (hasIdToken) {
     // Fallback: o client enviou um idToken explícito no payload
     try {
-      console.log('Tentando verificar idToken via admin.auth().verifyIdToken...');
       const decodedToken = await admin.auth().verifyIdToken(data.idToken);
       uid = decodedToken.uid;
       email = decodedToken.email || '';
-      console.log(`Auth via idToken fallback — uid=${uid}, email=${email}`);
     } catch (tokenError: any) {
-      // Loga o erro real para diagnóstico
-      console.error('FALHA ao verificar idToken.');
-      console.error(`tokenError.code=${tokenError?.code}`);
-      console.error(`tokenError.message=${tokenError?.message}`);
-      console.error('tokenError completo:', JSON.stringify(tokenError, Object.getOwnPropertyNames(tokenError)));
+      console.error('Falha ao verificar idToken:', tokenError?.code, tokenError?.message);
       throw new functions.https.HttpsError(
         'unauthenticated',
         'Token de autenticação inválido ou expirado.'
@@ -53,15 +42,14 @@ export const createUserProfile = functions.https.onCall(async (data, context) =>
     }
   } else {
     // Sem nenhum tipo de autenticação
-    console.error('createUserProfile chamado sem context.auth e sem data.idToken');
-    console.error(`data recebido: ${JSON.stringify(data)}`);
+    console.error('createUserProfile chamado sem autenticação');
     throw new functions.https.HttpsError(
       'unauthenticated',
       'O usuário deve estar autenticado para criar um perfil.'
     );
   }
 
-  console.log(`uid resolvido: ${uid}`);
+  console.log(`createUserProfile — uid=${uid}`);
 
   // Validação dos dados de entrada
   const { fullName, cpf, phone } = data;

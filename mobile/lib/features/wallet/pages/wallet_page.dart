@@ -227,7 +227,7 @@ class _WalletPageState extends State<WalletPage> {
                                     data['startup'] ??
                                     '';
 
-                                final title = data['title'] ??
+                                var title = data['title'] ??
                                     data['descricao'] ??
                                     data['description'] ??
                                     (type == 'aporte_simulado'
@@ -238,13 +238,31 @@ class _WalletPageState extends State<WalletPage> {
                                                 ? 'Venda de tokens'
                                                 : 'Movimentação');
 
-                                final description = data['description'] ??
+                                var description = data['description'] ??
                                     data['subtitle'] ??
                                     (type == 'aporte_simulado'
                                         ? 'Crédito interno'
                                         : startupName.toString().isNotEmpty
                                             ? startupName
                                             : 'Movimentação');
+
+                                // Normalização para exibir "Crédito adicionado" no histórico
+                                final titleStr = title.toString().trim();
+                                final descStr = description.toString().trim();
+
+                                if (titleStr == 'Aporte simulado na carteira' ||
+                                    titleStr == 'Aporte na carteira' ||
+                                    titleStr == 'aporte_simulado' ||
+                                    type == 'aporte_simulado') {
+                                  title = 'Crédito adicionado';
+                                }
+
+                                if (descStr == 'Aporte simulado na carteira' ||
+                                    descStr == 'Aporte na carteira' ||
+                                    descStr == 'aporte_simulado' ||
+                                    descStr == 'Crédito interno') {
+                                  description = 'Crédito adicionado';
+                                }
 
                                 final rawAmount = data['amount'] ??
                                     data['valorTotal'] ??
@@ -266,8 +284,8 @@ class _WalletPageState extends State<WalletPage> {
                                     isSale;
 
                                 return WalletHistoryItem(
-                                  title: title.toString().replaceAll('simulado', '').trim(),
-                                  subtitle: description.toString().replaceAll('simulado', '').trim(),
+                                  title: title.toString(),
+                                  subtitle: description.toString(),
                                   value: isCredit
                                       ? AppFormatters.currency(amount.abs())
                                       : AppFormatters.negativeCurrency(amount.abs()),

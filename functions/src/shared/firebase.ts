@@ -1,4 +1,4 @@
 import * as admin from 'firebase-admin';
 
-// Shared Firebase instances or helpers
+// Instâncias compartilhadas do Firebase
 export const db = admin.firestore();

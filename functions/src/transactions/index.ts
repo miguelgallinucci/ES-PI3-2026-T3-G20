@@ -1,2 +1,2 @@
-// Exports for Transactions functions
+// Exporta funções de Transações
 export * from './handlers/buy_tokens';
