@@ -285,19 +285,19 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
   String get _selectedChartSubtitle {
     switch (_selectedPeriod) {
       case ChartPeriod.day:
-        return 'Variação simulada ao longo do dia';
+        return 'Variação estimada ao longo do dia';
 
       case ChartPeriod.week:
-        return 'Variação simulada da semana';
+        return 'Variação estimada da semana';
 
       case ChartPeriod.month:
-        return 'Variação simulada do mês';
+        return 'Variação estimada do mês';
 
       case ChartPeriod.sixMonths:
-        return 'Variação simulada dos últimos 6 meses';
+        return 'Variação estimada dos últimos 6 meses';
 
       case ChartPeriod.year:
-        return 'Variação simulada do ano';
+        return 'Variação estimada do ano';
     }
   }
 

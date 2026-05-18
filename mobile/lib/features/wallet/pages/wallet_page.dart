@@ -13,7 +13,7 @@ import '../widgets/wallet_summary_section.dart';
 import '../widgets/wallet_deposit_sheet.dart';
 import '../../../core/utils/app_formatters.dart';
 
-/// Widget principal da página de portfólio
+/// Widget principal da página de carteira
 /// Responsável por exibir a carteira de investimentos do usuário
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -22,10 +22,10 @@ class WalletPage extends StatefulWidget {
   State<WalletPage> createState() => _WalletPageState();
 }
 
-/// Estado da página de portfólio
+/// Estado da página de carteira
 /// Gerencia a inicialização, formatação de dados e exibição de modais
 class _WalletPageState extends State<WalletPage> {
-  /// Serviço responsável por operações do portfólio no Firestore
+  /// Serviço responsável por operações da carteira no Firestore
   final WalletService _walletService = WalletService();
 
 
@@ -76,7 +76,7 @@ class _WalletPageState extends State<WalletPage> {
     }
   }
 
-  /// Constrói a interface da página de portfólio
+  /// Constrói a interface da página de carteira
   /// Se está inicializando, exibe carregamento
   /// Caso contrário, exibe gradiente de fundo, saldo, tokens e histórico de transações
   @override

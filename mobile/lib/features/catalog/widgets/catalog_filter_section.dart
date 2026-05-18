@@ -110,6 +110,8 @@ class _FilterChipBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isDefault = text == 'Setores' || text == 'Estágios';
+
     return PopupMenuButton<String>(
       color: const Color(0xFF102235),
       elevation: 8,
@@ -155,7 +157,7 @@ class _FilterChipBox extends StatelessWidget {
           color: Colors.white.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: text.startsWith('Todos')
+            color: isDefault
                 ? AppColors.border
                 : AppColors.primary.withValues(alpha: 0.65),
           ),
@@ -167,11 +169,11 @@ class _FilterChipBox extends StatelessWidget {
                 text,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: text.startsWith('Todos')
+                  color: isDefault
                       ? Colors.white
                       : AppColors.primaryLight,
                   fontSize: 14,
-                  fontWeight: text.startsWith('Todos')
+                  fontWeight: isDefault
                       ? FontWeight.w500
                       : FontWeight.w800,
                 ),

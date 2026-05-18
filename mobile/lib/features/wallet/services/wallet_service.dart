@@ -1,8 +1,8 @@
 // Serviço de Carteira
 //
-// Responsável por gerenciar todas as operações de portfólio do usuário,
+// Responsável por gerenciar todas as operações de carteira do usuário,
 // incluindo:
-// - Sincronização de dados do portfólio com Firestore (tempo real)
+// - Sincronização de dados da carteira com Firestore (tempo real)
 // - Monitoramento de transações do usuário
 // - Gerenciamento de saldo fictício (saldoFicticio)
 // - Adição de aportes simulados com registro de transação
@@ -14,7 +14,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// Classe de serviço para gerenciar operações de portfólio
+// Classe de serviço para gerenciar operações da carteira
 class WalletService {
   // Instância do Firestore para acesso à base de dados
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -39,7 +39,7 @@ class WalletService {
     return _firestore.collection('users').doc(uid);
   }
 
-  // Observa em tempo real as alterações no portfólio do usuário atual
+  // Observa em tempo real as alterações na carteira do usuário atual
   // Retorna um Stream com o snapshot do documento do usuário
   // Lança Exception se o usuário não estiver autenticado
   Stream<DocumentSnapshot<Map<String, dynamic>>> watchCurrentUserWallet() {

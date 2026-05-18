@@ -1,7 +1,7 @@
-// Widget responsável por exibir o formulário de adição de saldo fictício.
+// Widget responsável por exibir o formulário de adição de saldo.
 //
 // Isola o BottomSheet da carteira e controla a interface de valores rápidos,
-// campo de entrada e confirmação do aporte simulado.
+// campo de entrada e confirmação do crédito na carteira.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
