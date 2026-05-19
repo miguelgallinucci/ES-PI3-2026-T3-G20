@@ -82,7 +82,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     if (password.length < 6) {
       setState(() {
-        _errorMessage = 'A senha precisa ter pelo menos 6 caracteres.';
+        _errorMessage = 'A senha deve ter pelo menos 6 caracteres.';
       });
       return;
     }
@@ -269,6 +269,16 @@ class _RegisterPageState extends State<RegisterPage> {
                             hint: '••••••••',
                             obscureText: true,
                             controller: _passwordController,
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.only(left: 10, top: 6),
+                            child: Text(
+                              'A senha deve ter pelo menos 6 caracteres.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 18),
                           AppInput(

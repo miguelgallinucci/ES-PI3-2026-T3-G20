@@ -40,20 +40,39 @@ class AuthService {
     final cleanCpf = cpf.trim();
     final cleanPhone = phone.trim();
 
+    // 1. Cria o usuário no Firebase Auth
     final credential = await _auth.createUserWithEmailAndPassword(
       email: cleanEmail,
       password: password,
     );
 
+    final user = credential.user;
+    if (user == null) {
+      throw Exception('Usuário nulo após createUserWithEmailAndPassword');
+    }
+
+    // 2. Obtém idToken fresco para enviar ao backend como fallback de autenticação.
+    //    O context.auth do callable pode chegar vazio logo após o registro,
+    //    então enviamos o token explicitamente no payload.
+    final idToken = await user.getIdToken(true);
+    debugPrint('idToken obtido com sucesso (${idToken?.length ?? 0} chars)');
+
+    // 3. Chama a Cloud Function createUserProfile para criar users/{uid}
     try {
       final callable = _functions.httpsCallable('createUserProfile');
       await callable.call({
         'fullName': cleanFullName,
         'cpf': cleanCpf,
         'phone': cleanPhone,
+        'idToken': idToken,
       });
+      debugPrint('Perfil criado via Cloud Function para uid=${user.uid}');
     } catch (e) {
       debugPrint('Erro ao criar perfil no backend: $e');
+      // Propaga o erro para a UI informar o usuário.
+      // O cadastro no Auth já foi feito, mas sem perfil no Firestore
+      // o app não funcionará corretamente.
+      rethrow;
     }
 
     return credential;

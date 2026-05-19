@@ -117,7 +117,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   PageHeader(
-                    title: 'Desempenho da carteira',
+                    title: 'Meus investimentos',
                     subtitle:
                         'Acompanhe a evolucao dos seus investimentos por periodo, com valores e pontos de referencia no grafico.',
                     onBack: () => Navigator.pop(context),

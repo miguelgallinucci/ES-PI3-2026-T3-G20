@@ -96,7 +96,7 @@ class CatalogMarketSection extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         const Text(
-          'Escolha uma oferta para comprar tokens simulados de uma startup.',
+          'Escolha uma oferta para comprar tokens de uma startup.',
           style: TextStyle(
             color: AppColors.textSecondary,
             fontSize: 14,

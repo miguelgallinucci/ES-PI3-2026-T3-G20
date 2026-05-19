@@ -32,8 +32,8 @@ class _CatalogPageState extends State<CatalogPage> {
 
   final TextEditingController _searchController = TextEditingController();
 
-  String selectedSector = 'Todos os setores';
-  String selectedStage = 'Todos os estágios';
+  String selectedSector = 'Setores';
+  String selectedStage = 'Estágios';
 
   final CatalogService _startupService = CatalogService();
 
@@ -231,29 +231,37 @@ class _CatalogPageState extends State<CatalogPage> {
       builder: (context, snapshot) {
         final startups = snapshot.data ?? [];
 
+        final dynamicSectors = startups
+            .expand((s) => s.categories)
+            .map((c) => c.trim())
+            .where((c) => c.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort((a, b) => a.compareTo(b));
+
         final sectorOptions = [
-          'Todos os setores',
-          ...{
-            for (final startup in startups)
-              for (final category in startup.categories)
-                if (category.trim().isNotEmpty) category.trim(),
-          },
+          'Setores',
+          ...dynamicSectors,
         ];
 
+        final dynamicStages = startups
+            .map((s) => s.stage.trim())
+            .where((st) => st.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort((a, b) => a.compareTo(b));
+
         final stageOptions = [
-          'Todos os estágios',
-          ...{
-            for (final startup in startups)
-              if (startup.stage.trim().isNotEmpty) startup.stage.trim(),
-          },
+          'Estágios',
+          ...dynamicStages,
         ];
 
         if (!sectorOptions.contains(selectedSector)) {
-          selectedSector = 'Todos os setores';
+          selectedSector = 'Setores';
         }
 
         if (!stageOptions.contains(selectedStage)) {
-          selectedStage = 'Todos os estágios';
+          selectedStage = 'Estágios';
         }
 
         final searchText = _searchController.text.trim().toLowerCase();
@@ -276,12 +284,12 @@ class _CatalogPageState extends State<CatalogPage> {
                   description.contains(searchText) ||
                   categories.any((category) => category.contains(searchText));
 
-          final matchesSector =
-              selectedSector == 'Todos os setores' ||
-                  categories.contains(selectedSector.toLowerCase());
+          final matchesSector = selectedSector == 'Setores' ||
+              startup.categories.any((c) => c.trim().toLowerCase() == selectedSector.trim().toLowerCase()) ||
+              startup.sector.trim().toLowerCase() == selectedSector.trim().toLowerCase();
 
           final matchesStage =
-              selectedStage == 'Todos os estágios' ||
+              selectedStage == 'Estágios' ||
                   startup.stage.toLowerCase() == selectedStage.toLowerCase();
 
           return matchesSearch && matchesSector && matchesStage;
@@ -447,7 +455,7 @@ class _CatalogPageState extends State<CatalogPage> {
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          'A compra simulada dos tokens da ${offer.startup} foi concluída com sucesso.',
+          'A compra dos tokens da ${offer.startup} foi concluída com sucesso.',
           style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
         ),
         actions: [
