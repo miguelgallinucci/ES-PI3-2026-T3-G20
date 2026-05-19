@@ -3,117 +3,122 @@ import * as admin from 'firebase-admin';
 import { db } from '../../shared/firebase';
 
 export const buyTokens = functions.https.onCall(async (data, context) => {
-    // 2. Validar se o usuário está autenticado
     if (!context.auth || !context.auth.uid) {
         throw new functions.https.HttpsError(
             'unauthenticated',
-            'Usuário não autenticado.'
+            'Usuario nao autenticado.'
         );
     }
 
     const uid = context.auth.uid;
     const { startupId, quantity } = data;
 
-    // 4. Validar os campos obrigatórios
     if (!startupId || typeof startupId !== 'string' || startupId.trim() === '') {
         throw new functions.https.HttpsError(
             'invalid-argument',
-            'O campo startupId é obrigatório e deve ser uma string válida.'
+            'O campo startupId e obrigatorio e deve ser uma string valida.'
         );
     }
 
     if (typeof quantity !== 'number' || quantity <= 0 || !Number.isInteger(quantity)) {
         throw new functions.https.HttpsError(
             'invalid-argument',
-            'A quantidade deve ser um número inteiro maior que zero.'
+            'A quantidade deve ser um numero inteiro maior que zero.'
         );
     }
 
+    const normalizedStartupId = startupId.trim();
     const userRef = db.collection('users').doc(uid);
-    const startupRef = db.collection('startups').doc(startupId.trim());
+    const startupRef = db.collection('startups').doc(normalizedStartupId);
+    const positionRef = userRef.collection('positions').doc(normalizedStartupId);
     const transactionRef = db.collection('transactions').doc();
 
     try {
         await db.runTransaction(async (transaction) => {
-            // 1. Ler users/{uid}
             const userSnapshot = await transaction.get(userRef);
-            // 2. Se o usuário não existir, lançar erro
             if (!userSnapshot.exists) {
-                throw new functions.https.HttpsError('not-found', 'Usuário não encontrado.');
+                throw new functions.https.HttpsError('not-found', 'Usuario nao encontrado.');
             }
 
-            // 3. Ler startups/{startupId}
             const startupSnapshot = await transaction.get(startupRef);
-            // 4. Se a startup não existir, lançar erro
             if (!startupSnapshot.exists) {
-                throw new functions.https.HttpsError('not-found', 'Startup não encontrada.');
+                throw new functions.https.HttpsError('not-found', 'Startup nao encontrada.');
             }
 
+            const positionSnapshot = await transaction.get(positionRef);
             const userData = userSnapshot.data() || {};
             const startupData = startupSnapshot.data() || {};
+            const positionData = positionSnapshot.data() || {};
 
-            // 5. Ler saldoFicticio do usuário, usando 0 como padrão se não existir
             const saldoFicticio = typeof userData.saldoFicticio === 'number' ? userData.saldoFicticio : 0;
-            
-            // 6. Ler tokenPrice da startup
             const tokenPrice = typeof startupData.tokenPrice === 'number' ? startupData.tokenPrice : 0;
+
             if (tokenPrice <= 0) {
-                throw new functions.https.HttpsError('failed-precondition', 'Preço do token inválido na startup.');
+                throw new functions.https.HttpsError('failed-precondition', 'Preco do token invalido na startup.');
             }
 
-            // 7. Ler availableTokens da startup
             const availableTokens = typeof startupData.availableTokens === 'number' ? startupData.availableTokens : 0;
-
-            // 8. Ler capitalRaised da startup, usando 0 como padrão se não existir
             const capitalRaised = typeof startupData.capitalRaised === 'number' ? startupData.capitalRaised : 0;
-
-            // 9. Calcular totalValue = quantity * tokenPrice
             const totalValue = quantity * tokenPrice;
 
-            // 10. Se saldoFicticio < totalValue, lançar erro de saldo insuficiente
             if (saldoFicticio < totalValue) {
                 throw new functions.https.HttpsError('failed-precondition', 'saldo_insuficiente');
             }
 
-            // 11. Se availableTokens < quantity, lançar erro de tokens insuficientes
             if (availableTokens < quantity) {
-                throw new functions.https.HttpsError('failed-precondition', 'Tokens insuficientes disponíveis na startup.');
+                throw new functions.https.HttpsError('failed-precondition', 'Tokens insuficientes disponiveis na startup.');
             }
 
-            // 12. Atualizar users/{uid}
+            const currentQuantity = typeof positionData.quantity === 'number' ? positionData.quantity : 0;
+            const currentTotalInvested = typeof positionData.totalInvested === 'number' ? positionData.totalInvested : 0;
+            const newQuantity = currentQuantity + quantity;
+            const newTotalInvested = currentTotalInvested + totalValue;
+            const startupSector = startupData.sector || (startupData.categorias && startupData.categorias.length > 0 ? startupData.categorias[0] : "");
+            const now = admin.firestore.FieldValue.serverTimestamp();
+
             transaction.update(userRef, {
                 saldoFicticio: saldoFicticio - totalValue
             });
 
-            // 13. Atualizar startups/{startupId}
             transaction.update(startupRef, {
                 availableTokens: availableTokens - quantity,
                 capitalRaised: capitalRaised + totalValue
             });
 
-            // 14. Criar novo documento em transactions
+            transaction.set(positionRef, {
+                startupId: normalizedStartupId,
+                startupName: startupData.name || "",
+                sector: startupSector,
+                quantity: newQuantity,
+                tokenPrice: tokenPrice,
+                totalInvested: newTotalInvested,
+                averagePrice: newTotalInvested / newQuantity,
+                updatedAt: now,
+                ...(positionSnapshot.exists ? {} : { createdAt: now }),
+            }, { merge: true });
+
             transaction.set(transactionRef, {
                 userId: uid,
                 type: "compra",
                 title: "Compra de tokens",
                 description: "Compra de tokens da startup",
-                startupId: startupId.trim(),
+                startupId: normalizedStartupId,
                 startupName: startupData.name || "",
-                sector: startupData.sector || (startupData.categorias && startupData.categorias.length > 0 ? startupData.categorias[0] : ""),
+                sector: startupSector,
                 quantity: quantity,
                 tokenPrice: tokenPrice,
                 totalValue: totalValue,
                 amount: -totalValue,
-                createdAt: admin.firestore.FieldValue.serverTimestamp()
+                createdAt: now
             });
         });
 
         return { success: true };
     } catch (error) {
-        console.error('Erro na transação de compra:', error);
+        console.error('Erro na transacao de compra:', error);
         if (error instanceof functions.https.HttpsError) {
             throw error;
         }
-        throw new functions.https.HttpsError('internal', 'Erro interno ao processar a transação.');
+        throw new functions.https.HttpsError('internal', 'Erro interno ao processar a transacao.');
     }
 });
