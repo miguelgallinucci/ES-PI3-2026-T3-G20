@@ -43,3 +43,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Flutter generated files after moving app to mobile/
+mobile/build/
+mobile/.dart_tool/
+mobile/.idea/
+
+# Firebase Functions generated files
+functions/node_modules/
+functions/lib/
