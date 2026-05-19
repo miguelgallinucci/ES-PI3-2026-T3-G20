@@ -20,6 +20,7 @@ class StartupModel {
   final String demoVideoUrl;
   final String logoUrl;
   final String status;
+  final String emailPrivado;
 
   const StartupModel({
     this.id = '',
@@ -41,6 +42,7 @@ class StartupModel {
     this.demoVideoUrl = '',
     this.logoUrl = '',
     this.status = '',
+    this.emailPrivado = '',
   });
 
   factory StartupModel.fromMap(Map<String, dynamic> data) {
@@ -76,6 +78,7 @@ class StartupModel {
       demoVideoUrl: data['demoVideoUrl']?.toString() ?? '',
       logoUrl: data['logoUrl']?.toString() ?? '',
       status: data['status']?.toString() ?? '',
+      emailPrivado: data['emailPrivado']?.toString() ?? '',
     );
   }
 

@@ -19,6 +19,7 @@ const List<StartupModel> mockStartups = [
     partners: 'Ana Martins, Lucas Ferreira, Marina Souza',
     mentorsBoard: 'Carlos Almeida, Fernanda Lima',
     status: 'Ativo',
+    emailPrivado: '',
   ),
   StartupModel(
     name: 'GreenVolt Hub',
@@ -38,6 +39,7 @@ const List<StartupModel> mockStartups = [
     partners: 'Rafael Costa, Bianca Lima, Pedro Alves',
     mentorsBoard: 'Marcos Tavares, Helena Duarte',
     status: 'Ativo',
+    emailPrivado: '',
   ),
   StartupModel(
     name: 'AgroLink Data',
@@ -57,5 +59,6 @@ const List<StartupModel> mockStartups = [
     partners: 'João Mendes, Clara Rocha',
     mentorsBoard: 'Prof. Dr. Henrique Oliveira',
     status: 'Ativo',
+    emailPrivado: '',
   ),
 ];

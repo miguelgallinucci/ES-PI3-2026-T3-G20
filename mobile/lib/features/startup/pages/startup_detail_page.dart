@@ -13,6 +13,7 @@ import '../widgets/startup_metrics_section.dart';
 import '../widgets/startup_questions_section.dart';
 import '../widgets/startup_intro_section.dart';
 import '../widgets/startup_token_overview_card.dart';
+import '../../catalog/widgets/private_info_tab.dart';
 
 enum ChartPeriod {
   day,
@@ -522,6 +523,10 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                           onSend: _handleSendQuestion,
                         );
                       },
+                    ),
+                    const SizedBox(height: 18),
+                    PrivateInfoTab(
+                      emailPrivado: widget.startup.emailPrivado,
                     ),
                     const SizedBox(height: 18),
                     AppSectionCard(
