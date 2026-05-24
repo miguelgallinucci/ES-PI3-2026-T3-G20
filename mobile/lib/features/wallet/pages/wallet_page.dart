@@ -78,18 +78,34 @@ class _WalletPageState extends State<WalletPage> {
     return 0;
   }
 
+  int _toMillis(dynamic value) {
+    if (value is Timestamp) return value.millisecondsSinceEpoch;
+    return 0;
+  }
+
   List<_TokenPosition> _positionsFromTransactions(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
     final positions = <String, _TokenPosition>{};
+    final orderedDocs = [...docs]
+      ..sort((a, b) {
+        final aDate = _toMillis(a.data()['createdAt']);
+        final bDate = _toMillis(b.data()['createdAt']);
 
-    for (final doc in docs) {
+        return aDate.compareTo(bDate);
+      });
+
+    for (final doc in orderedDocs) {
       final data = doc.data();
       final type = (data['type'] ?? data['tipo'] ?? '')
           .toString()
           .toLowerCase();
 
-      if (type != 'compra') {
+      final isPurchase = type == 'compra' || type == 'compra_balcao';
+      final isReservedForSale = type == 'oferta_venda';
+      final isCanceledOffer = type == 'cancelamento_oferta';
+
+      if (!isPurchase && !isReservedForSale && !isCanceledOffer) {
         continue;
       }
 
@@ -104,26 +120,53 @@ class _WalletPageState extends State<WalletPage> {
       final totalValue = _toDouble(
         data['totalValue'] ?? data['valorTotal'] ?? data['amount'],
       ).abs();
+      final reservedCost = _toDouble(data['reservedCost']);
 
       if (quantity <= 0) {
         continue;
       }
 
       final current = positions[key];
-      final newQuantity = (current?.quantity ?? 0) + quantity;
-      final newTotalInvested = (current?.totalInvested ?? 0) + totalValue;
+      var newQuantity = current?.quantity ?? 0;
+      var newTotalInvested = current?.totalInvested ?? 0;
+      var newTokenPrice = current?.tokenPrice ?? 0;
+
+      if (isPurchase) {
+        newQuantity += quantity;
+        newTotalInvested += totalValue;
+        newTokenPrice = tokenPrice > 0 ? tokenPrice : newTokenPrice;
+      } else if (isReservedForSale) {
+        final averagePrice =
+            newQuantity > 0 ? newTotalInvested / newQuantity : 0;
+        final costToRemove = reservedCost > 0
+            ? reservedCost
+            : averagePrice * quantity;
+        newQuantity -= quantity;
+        newTotalInvested -= costToRemove;
+
+        if (newQuantity < 0) {
+          newQuantity = 0;
+        }
+
+        if (newTotalInvested < 0) {
+          newTotalInvested = 0;
+        }
+      } else if (isCanceledOffer) {
+        newQuantity += quantity;
+        newTotalInvested += reservedCost;
+      }
 
       positions[key] = _TokenPosition(
         startupName: startupName,
         sector: (data['sector'] ?? current?.sector ?? '').toString(),
         quantity: newQuantity,
-        tokenPrice: tokenPrice > 0 ? tokenPrice : current?.tokenPrice ?? 0,
+        tokenPrice: newTokenPrice,
         totalInvested: newTotalInvested,
         averagePrice: newQuantity > 0 ? newTotalInvested / newQuantity : 0,
       );
     }
 
-    return positions.values.toList()
+    return positions.values.where((position) => position.quantity > 0).toList()
       ..sort((a, b) => a.startupName.compareTo(b.startupName));
   }
 
