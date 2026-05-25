@@ -526,7 +526,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                     ),
                     const SizedBox(height: 18),
                     PrivateInfoTab(
-                      emailPrivado: widget.startup.emailPrivado,
+                      startupId: widget.startup.id,
                     ),
                     const SizedBox(height: 18),
                     AppSectionCard(
