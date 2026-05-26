@@ -2,6 +2,28 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { db } from '../../shared/firebase';
 
+const MARKET_CURRENT_PRICE_WEIGHT = 0.7;
+const MARKET_AVERAGE_PRICE_WEIGHT = 0.3;
+
+function roundTokenPrice(value: number): number {
+    return Number(value.toFixed(4));
+}
+
+function calculateMarketAdjustedPrice(currentPrice: number, marketAveragePrice: number): number {
+    if (currentPrice <= 0) {
+        return roundTokenPrice(marketAveragePrice);
+    }
+
+    if (marketAveragePrice <= 0) {
+        return currentPrice;
+    }
+
+    return roundTokenPrice(
+        (currentPrice * MARKET_CURRENT_PRICE_WEIGHT) +
+        (marketAveragePrice * MARKET_AVERAGE_PRICE_WEIGHT)
+    );
+}
+
 export const buyMarketOffer = functions.https.onCall(async (data, context) => {
     if (!context.auth || !context.auth.uid) {
         throw new functions.https.HttpsError(
@@ -82,11 +104,16 @@ export const buyMarketOffer = functions.https.onCall(async (data, context) => {
 
             const sellerRef = db.collection('users').doc(sellerId);
             const buyerPositionRef = buyerRef.collection('positions').doc(startupId);
+            const startupRef = db.collection('startups').doc(startupId);
+            const last24Hours = admin.firestore.Timestamp.fromMillis(Date.now() - (24 * 60 * 60 * 1000));
+            const recentMarketTransactionsQuery = db.collection('transactions').where('startupId', '==', startupId);
 
-            const [buyerSnapshot, sellerSnapshot, buyerPositionSnapshot] = await Promise.all([
+            const [buyerSnapshot, sellerSnapshot, buyerPositionSnapshot, startupSnapshot, recentMarketTransactionsSnapshot] = await Promise.all([
                 transaction.get(buyerRef),
                 transaction.get(sellerRef),
                 transaction.get(buyerPositionRef),
+                transaction.get(startupRef),
+                transaction.get(recentMarketTransactionsQuery),
             ]);
 
             if (!buyerSnapshot.exists) {
@@ -100,9 +127,11 @@ export const buyMarketOffer = functions.https.onCall(async (data, context) => {
             const buyerData = buyerSnapshot.data() || {};
             const sellerData = sellerSnapshot.data() || {};
             const buyerPositionData = buyerPositionSnapshot.data() || {};
+            const startupData = startupSnapshot.data() || {};
             const totalValue = quantity * unitPrice;
             const buyerBalance = typeof buyerData.saldoFicticio === 'number' ? buyerData.saldoFicticio : 0;
             const sellerBalance = typeof sellerData.saldoFicticio === 'number' ? sellerData.saldoFicticio : 0;
+            const currentStartupPrice = typeof startupData.tokenPrice === 'number' ? startupData.tokenPrice : unitPrice;
 
             if (buyerBalance < totalValue) {
                 throw new functions.https.HttpsError('failed-precondition', 'saldo_insuficiente');
@@ -113,6 +142,42 @@ export const buyMarketOffer = functions.https.onCall(async (data, context) => {
             const newBuyerQuantity = currentBuyerQuantity + quantity;
             const newBuyerTotalInvested = currentBuyerTotalInvested + totalValue;
             const now = admin.firestore.FieldValue.serverTimestamp();
+            let marketTokens24h = quantity;
+            let marketValue24h = totalValue;
+
+            recentMarketTransactionsSnapshot.docs.forEach((doc) => {
+                const transactionData = doc.data() || {};
+                const type = String(transactionData.type || transactionData.tipo || '').toLowerCase();
+                const createdAt = transactionData.createdAt;
+
+                if (type !== 'compra_balcao') {
+                    return;
+                }
+
+                if (!createdAt || typeof createdAt.toMillis !== 'function' || createdAt.toMillis() < last24Hours.toMillis()) {
+                    return;
+                }
+
+                const transactionQuantity = typeof transactionData.quantity === 'number' ? transactionData.quantity : 0;
+                const transactionTotalValue = typeof transactionData.totalValue === 'number'
+                    ? transactionData.totalValue
+                    : (typeof transactionData.valorTotal === 'number'
+                        ? transactionData.valorTotal
+                        : (typeof transactionData.amount === 'number' ? Math.abs(transactionData.amount) : 0));
+
+                if (transactionQuantity <= 0 || transactionTotalValue <= 0) {
+                    return;
+                }
+
+                marketTokens24h += transactionQuantity;
+                marketValue24h += transactionTotalValue;
+            });
+
+            const marketAveragePrice24h = marketTokens24h > 0 ? marketValue24h / marketTokens24h : unitPrice;
+            const newStartupPrice = calculateMarketAdjustedPrice(currentStartupPrice, marketAveragePrice24h);
+            const variationPercent = currentStartupPrice > 0
+                ? ((newStartupPrice - currentStartupPrice) / currentStartupPrice) * 100
+                : 0;
 
             transaction.update(buyerRef, {
                 saldoFicticio: buyerBalance - totalValue,
@@ -143,6 +208,24 @@ export const buyMarketOffer = functions.https.onCall(async (data, context) => {
                 soldAt: newRemainingQuantity > 0 ? offerData.soldAt || null : now,
                 lastBuyerId: buyerId,
                 updatedAt: now,
+            });
+
+            transaction.update(startupRef, {
+                tokenPrice: newStartupPrice,
+                variationPercent,
+                lastPriceUpdateAt: now,
+            });
+
+            transaction.set(startupRef.collection('priceHistory').doc(), {
+                price: newStartupPrice,
+                previousPrice: currentStartupPrice,
+                variationPercent,
+                source: 'balcao',
+                marketAveragePrice24h,
+                quantity,
+                totalValue,
+                offerId: normalizedOfferId,
+                createdAt: now,
             });
 
             transaction.set(buyerTransactionRef, {

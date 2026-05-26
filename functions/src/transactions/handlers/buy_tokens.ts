@@ -2,6 +2,28 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { db } from '../../shared/firebase';
 
+const TOKEN_DEMAND_SENSITIVITY = 0.5;
+const MAX_PRICE_IMPACT_PER_PURCHASE = 0.02;
+
+function clamp(value: number, min: number, max: number): number {
+    return Math.min(Math.max(value, min), max);
+}
+
+function roundTokenPrice(value: number): number {
+    return Number(value.toFixed(4));
+}
+
+function calculateDemandAdjustedPrice(currentPrice: number, quantity: number, totalTokens: number): number {
+    if (currentPrice <= 0 || quantity <= 0 || totalTokens <= 0) {
+        return currentPrice;
+    }
+
+    const rawImpact = (quantity / totalTokens) * TOKEN_DEMAND_SENSITIVITY;
+    const impact = clamp(rawImpact, 0, MAX_PRICE_IMPACT_PER_PURCHASE);
+
+    return roundTokenPrice(currentPrice * (1 + impact));
+}
+
 export const buyTokens = functions.https.onCall(async (data, context) => {
     if (!context.auth || !context.auth.uid) {
         throw new functions.https.HttpsError(
@@ -59,7 +81,10 @@ export const buyTokens = functions.https.onCall(async (data, context) => {
 
             const availableTokens = typeof startupData.availableTokens === 'number' ? startupData.availableTokens : 0;
             const capitalRaised = typeof startupData.capitalRaised === 'number' ? startupData.capitalRaised : 0;
+            const totalTokens = typeof startupData.totalTokens === 'number' ? startupData.totalTokens : availableTokens;
             const totalValue = quantity * tokenPrice;
+            const newTokenPrice = calculateDemandAdjustedPrice(tokenPrice, quantity, totalTokens);
+            const variationPercent = tokenPrice > 0 ? ((newTokenPrice - tokenPrice) / tokenPrice) * 100 : 0;
 
             if (saldoFicticio < totalValue) {
                 throw new functions.https.HttpsError('failed-precondition', 'saldo_insuficiente');
@@ -82,7 +107,20 @@ export const buyTokens = functions.https.onCall(async (data, context) => {
 
             transaction.update(startupRef, {
                 availableTokens: availableTokens - quantity,
-                capitalRaised: capitalRaised + totalValue
+                capitalRaised: capitalRaised + totalValue,
+                tokenPrice: newTokenPrice,
+                variationPercent,
+                lastPriceUpdateAt: now
+            });
+
+            transaction.set(startupRef.collection('priceHistory').doc(), {
+                price: newTokenPrice,
+                previousPrice: tokenPrice,
+                variationPercent,
+                source: 'compra',
+                quantity,
+                totalValue,
+                createdAt: now
             });
 
             transaction.set(positionRef, {
