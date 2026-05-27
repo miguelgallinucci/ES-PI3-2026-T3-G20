@@ -104,6 +104,15 @@ class _WalletPageState extends State<WalletPage> {
     });
   }
 
+  Stream<DocumentSnapshot<Map<String, dynamic>>> _watchStartup(
+    String startupId,
+  ) {
+    return FirebaseFirestore.instance
+        .collection('startups')
+        .doc(startupId)
+        .snapshots();
+  }
+
   List<_WalletTokenPricePoint> _last24HourPriceHistory(
     List<_WalletTokenPricePoint> history,
   ) {
@@ -302,95 +311,146 @@ class _WalletPageState extends State<WalletPage> {
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: AppColors.border),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          position.startupName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          position.sector.isEmpty ? 'Startup' : position.sector,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _TokenDetailInfo(
-                                label: 'Voce possui',
-                                value: '${position.quantity} tokens',
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _TokenDetailInfo(
-                                label: 'Total investido',
-                                value: AppFormatters.currency(
-                                  position.totalInvested,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _TokenDetailInfo(
-                                label: 'Preco medio',
-                                value: AppFormatters.currency(
-                                  position.averagePrice,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _TokenDetailInfo(
-                                label: 'Preco do token',
-                                value: AppFormatters.currency(
-                                  position.tokenPrice,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Ultimas 24h',
-                          style: TextStyle(
-                            color: AppColors.primaryLight,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          height: 180,
-                          child: StreamBuilder<List<_WalletTokenPricePoint>>(
-                            stream: _watchTokenPriceHistory(position.startupId),
-                            builder: (context, snapshot) {
-                              final chartData = _walletTokenChartData(
-                                position,
-                                snapshot.data ?? const [],
-                              );
+                    child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                      stream: _watchStartup(position.startupId),
+                      builder: (context, startupSnapshot) {
+                        final startupData = startupSnapshot.data?.data() ?? {};
+                        final startupName =
+                            (startupData['name'] ?? position.startupName)
+                                .toString();
+                        final firebaseCategories =
+                            startupData['categorias'] is List
+                                ? List<String>.from(startupData['categorias'])
+                                : const <String>[];
+                        final sector = firebaseCategories.isNotEmpty
+                            ? firebaseCategories.join(' / ')
+                            : (startupData['sector'] ?? position.sector)
+                                .toString();
+                        final currentTokenPrice =
+                            _toDouble(startupData['tokenPrice']);
+                        final tokenPrice = currentTokenPrice > 0
+                            ? currentTokenPrice
+                            : position.tokenPrice;
+                        final currentValue = position.quantity * tokenPrice;
+                        final returnPercent = position.totalInvested > 0
+                            ? ((currentValue - position.totalInvested) /
+                                    position.totalInvested) *
+                                100
+                            : 0.0;
+                        final isPositive = returnPercent >= 0;
 
-                              return _TokenMiniChart(
-                                values: chartData.values,
-                                labels: chartData.labels,
-                              );
-                            },
-                          ),
-                        ),
-                      ],
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              startupName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              sector.isEmpty ? 'Startup' : sector,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _TokenDetailInfo(
+                                    label: 'Voce possui',
+                                    value: '${position.quantity} tokens',
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _TokenDetailInfo(
+                                    label: 'Valor atual',
+                                    value: AppFormatters.currency(currentValue),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _TokenDetailInfo(
+                                    label: 'Total investido',
+                                    value: AppFormatters.currency(
+                                      position.totalInvested,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _TokenDetailInfo(
+                                    label: 'Rentabilidade',
+                                    value:
+                                        '${isPositive ? '+' : ''}${returnPercent.toStringAsFixed(1)}%',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _TokenDetailInfo(
+                                    label: 'Preco medio',
+                                    value: AppFormatters.currency(
+                                      position.averagePrice,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _TokenDetailInfo(
+                                    label: 'Preco do token',
+                                    value: AppFormatters.currency(tokenPrice),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Ultimas 24h',
+                              style: TextStyle(
+                                color: AppColors.primaryLight,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              height: 180,
+                              child:
+                                  StreamBuilder<List<_WalletTokenPricePoint>>(
+                                stream: _watchTokenPriceHistory(
+                                  position.startupId,
+                                ),
+                                builder: (context, snapshot) {
+                                  final chartData = _walletTokenChartData(
+                                    position,
+                                    snapshot.data ?? const [],
+                                    currentTokenPrice: tokenPrice,
+                                  );
+
+                                  return _TokenMiniChart(
+                                    values: chartData.values,
+                                    labels: chartData.labels,
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ],
@@ -404,8 +464,9 @@ class _WalletPageState extends State<WalletPage> {
 
   _WalletTokenChartData _walletTokenChartData(
     _TokenPosition position,
-    List<_WalletTokenPricePoint> history,
-  ) {
+    List<_WalletTokenPricePoint> history, {
+    required double currentTokenPrice,
+  }) {
     final realHistory = _last24HourPriceHistory(history);
 
     if (realHistory.isNotEmpty) {
@@ -424,40 +485,30 @@ class _WalletPageState extends State<WalletPage> {
       }
 
       if (values.length == 1) {
-        values.insert(0, position.averagePrice);
+        values.insert(0, currentTokenPrice);
         labels.insert(0, 'Inicio');
       }
 
       return _WalletTokenChartData(values: values, labels: labels);
     }
 
-    final currentPrice = position.tokenPrice > 0
-        ? position.tokenPrice
-        : position.averagePrice;
+    final currentPrice = currentTokenPrice > 0
+        ? currentTokenPrice
+        : (position.tokenPrice > 0 ? position.tokenPrice : position.averagePrice);
 
     if (currentPrice <= 0 && position.averagePrice <= 0) {
       return const _WalletTokenChartData(
-        values: [0, 0, 0, 0, 0, 0, 0],
-        labels: ['00h', '04h', '08h', '12h', '16h', '20h', '24h'],
+        values: [0, 0],
+        labels: ['Inicio', 'Hoje'],
       );
     }
 
-    final startPrice = position.averagePrice > 0
-        ? position.averagePrice
-        : currentPrice;
-    final middlePrice = (startPrice + currentPrice) / 2;
-
     return _WalletTokenChartData(
       values: [
-        startPrice * 0.94,
-        startPrice * 0.98,
-        middlePrice,
-        middlePrice * 1.03,
-        currentPrice * 0.99,
-        currentPrice * 1.01,
+        currentPrice,
         currentPrice,
       ],
-      labels: const ['00h', '04h', '08h', '12h', '16h', '20h', '24h'],
+      labels: const ['Inicio', 'Hoje'],
     );
   }
 
@@ -511,7 +562,7 @@ class _WalletPageState extends State<WalletPage> {
                         );
                         final totalInvested = positions.fold<double>(
                           0,
-                          (sum, position) => sum + position.totalInvested,
+                          (total, position) => total + position.totalInvested,
                         );
 
                         return Column(
