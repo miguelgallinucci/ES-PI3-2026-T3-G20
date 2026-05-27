@@ -2,6 +2,7 @@
 //
 // Isola o BottomSheet do balcão de negociações e controla internamente
 // os TextEditingControllers usados no formulário.
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
@@ -34,6 +35,7 @@ class CatalogSellOfferSheet extends StatefulWidget {
 class _CatalogSellOfferSheetState extends State<CatalogSellOfferSheet> {
   late final TextEditingController sellQuantityController;
   late final TextEditingController sellPriceController;
+  double? _currentTokenPrice;
 
   @override
   void initState() {
@@ -42,6 +44,7 @@ class _CatalogSellOfferSheetState extends State<CatalogSellOfferSheet> {
     sellPriceController = TextEditingController(
       text: widget.position.currentPrice.toStringAsFixed(2).replaceAll('.', ','),
     );
+    _loadCurrentTokenPrice();
   }
 
   @override
@@ -49,6 +52,34 @@ class _CatalogSellOfferSheetState extends State<CatalogSellOfferSheet> {
     sellQuantityController.dispose();
     sellPriceController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadCurrentTokenPrice() async {
+    if (widget.position.startupId.trim().isEmpty) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('startups')
+        .doc(widget.position.startupId)
+        .get();
+    final data = snapshot.data() ?? {};
+    final tokenPrice = _toDouble(data['tokenPrice']);
+
+    if (!mounted || tokenPrice <= 0) return;
+
+    setState(() {
+      _currentTokenPrice = tokenPrice;
+      sellPriceController.text =
+          tokenPrice.toStringAsFixed(2).replaceAll('.', ',');
+    });
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+    }
+
+    return 0;
   }
 
   @override
@@ -66,6 +97,15 @@ class _CatalogSellOfferSheetState extends State<CatalogSellOfferSheet> {
     final bool hasEnoughTokens = sellQuantity <= widget.position.tokensOwned;
 
     final bool canPublish = hasValidQuantity && hasValidPrice && hasEnoughTokens;
+    final currentTokenPrice = _currentTokenPrice ?? widget.position.currentPrice;
+    final averagePrice = widget.position.averagePrice > 0
+        ? widget.position.averagePrice
+        : widget.position.currentPrice;
+    final offerVariation = currentTokenPrice > 0 && sellPrice > 0
+        ? ((sellPrice - currentTokenPrice) / currentTokenPrice) * 100
+        : 0.0;
+    final offerVariationText =
+        '${offerVariation >= 0 ? '+' : ''}${offerVariation.toStringAsFixed(1)}%';
 
     return Padding(
       padding: EdgeInsets.only(
@@ -192,9 +232,27 @@ class _CatalogSellOfferSheetState extends State<CatalogSellOfferSheet> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: MiniInfo(
+                            label: 'Preço atual',
+                            value: widget.formatCurrency(currentTokenPrice),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: MiniInfo(
+                            label: 'Preço de compra',
+                            value: widget.formatCurrency(averagePrice),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: MiniInfo(
                             label: 'Valor atual',
                             value: widget.formatCurrency(
-                              widget.position.currentPrice,
+                              widget.position.tokensOwned * currentTokenPrice,
                             ),
                           ),
                         ),
@@ -254,7 +312,7 @@ class _CatalogSellOfferSheetState extends State<CatalogSellOfferSheet> {
                 ],
                 onChanged: (_) => setState(() {}),
                 decoration: widget.inputDecoration(
-                  'Valor atual: ${widget.formatCurrency(widget.position.currentPrice)}',
+                  'Atual: ${widget.formatCurrency(currentTokenPrice)}',
                 ),
                 style: const TextStyle(color: Colors.white),
               ),
@@ -300,7 +358,16 @@ class _CatalogSellOfferSheetState extends State<CatalogSellOfferSheet> {
                     ),
                     SummaryRow(
                       label: 'Valor atual do token',
-                      value: widget.formatCurrency(widget.position.currentPrice),
+                      value: widget.formatCurrency(currentTokenPrice),
+                    ),
+                    SummaryRow(
+                      label: 'Preço de compra',
+                      value: widget.formatCurrency(averagePrice),
+                    ),
+                    SummaryRow(
+                      label: 'Diferença para o atual',
+                      value: offerVariationText,
+                      highlight: true,
                     ),
                     SummaryRow(
                       label: 'Preço de venda',

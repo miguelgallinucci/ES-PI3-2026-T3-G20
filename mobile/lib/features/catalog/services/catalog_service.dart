@@ -33,7 +33,8 @@ class CatalogService {
         .collection('marketOffers')
         .where('status', isEqualTo: 'open')
         .snapshots()
-        .map((snapshot) {
+        .asyncMap((snapshot) async {
+      final startupPrices = await _fetchStartupPrices();
       final offers = <AvailableOffer>[];
 
       for (final doc in snapshot.docs) {
@@ -45,12 +46,14 @@ class CatalogService {
         final unitPrice = _toDouble(data['unitPrice']);
         if (quantity <= 0 || unitPrice <= 0) continue;
 
-        final variation = _formatVariation(data['variationPercent']);
+        final startupId = data['startupId']?.toString() ?? '';
+        final currentPrice = startupPrices[startupId] ?? 0;
+        final variation = _formatOfferVariation(unitPrice, currentPrice);
 
         offers.add(
           AvailableOffer(
             id: doc.id,
-            startupId: data['startupId']?.toString() ?? '',
+            startupId: startupId,
             sellerId: data['sellerId']?.toString() ?? '',
             startup: data['startupName']?.toString() ?? 'Startup',
             sector: data['sector']?.toString() ?? '',
@@ -84,7 +87,8 @@ class CatalogService {
         .collection('marketOffers')
         .where('status', isEqualTo: 'open')
         .snapshots()
-        .map((snapshot) {
+        .asyncMap((snapshot) async {
+      final startupPrices = await _fetchStartupPrices();
       final offers = <AvailableOffer>[];
 
       for (final doc in snapshot.docs) {
@@ -95,18 +99,20 @@ class CatalogService {
         final quantity = _toInt(data['remainingQuantity'] ?? data['quantity']);
         final unitPrice = _toDouble(data['unitPrice']);
         if (quantity <= 0 || unitPrice <= 0) continue;
+        final startupId = data['startupId']?.toString() ?? '';
+        final currentPrice = startupPrices[startupId] ?? 0;
 
         offers.add(
           AvailableOffer(
             id: doc.id,
-            startupId: data['startupId']?.toString() ?? '',
+            startupId: startupId,
             sellerId: data['sellerId']?.toString() ?? '',
             startup: data['startupName']?.toString() ?? 'Startup',
             sector: data['sector']?.toString() ?? '',
             stage: data['stage']?.toString() ?? '',
             quantity: quantity,
             unitPrice: unitPrice,
-            variation: _formatVariation(data['variationPercent']),
+            variation: _formatOfferVariation(unitPrice, currentPrice),
             createdAtMillis: _toMillis(data['createdAt']),
           ),
         );
@@ -218,6 +224,7 @@ class CatalogService {
               currentPrice: position.currentPrice > 0
                   ? position.currentPrice
                   : position.averagePrice,
+              averagePrice: position.averagePrice,
               variation: '+0.0%',
             ),
           )
@@ -295,11 +302,21 @@ class CatalogService {
     return 0;
   }
 
-  String _formatVariation(dynamic value) {
-    final variation = _toDouble(value);
+  String _formatOfferVariation(double offerPrice, double currentPrice) {
+    if (offerPrice <= 0 || currentPrice <= 0) return '+0.0%';
+
+    final variation = ((offerPrice - currentPrice) / currentPrice) * 100;
     final signal = variation >= 0 ? '+' : '';
 
     return '$signal${variation.toStringAsFixed(1)}%';
+  }
+
+  Future<Map<String, double>> _fetchStartupPrices() async {
+    final snapshot = await _firestore.collection('startups').get();
+
+    return {
+      for (final doc in snapshot.docs) doc.id: _toDouble(doc.data()['tokenPrice'])
+    };
   }
 
   int _toMillis(dynamic value) {
@@ -312,17 +329,14 @@ class _PositionAccumulator {
   final String startupId;
   final String startup;
   String sector;
-  int quantity;
-  double totalValue;
-  double currentPrice;
+  int quantity = 0;
+  double totalValue = 0;
+  double currentPrice = 0;
 
   _PositionAccumulator({
     required this.startupId,
     required this.startup,
     required this.sector,
-    this.quantity = 0,
-    this.totalValue = 0,
-    this.currentPrice = 0,
   });
 
   double get averagePrice {

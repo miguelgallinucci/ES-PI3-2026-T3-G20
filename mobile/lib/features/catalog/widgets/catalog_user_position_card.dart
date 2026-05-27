@@ -13,6 +13,7 @@ class UserTokenPosition {
   final String sector;
   final int tokensOwned;
   final double currentPrice;
+  final double averagePrice;
   final String variation;
 
   const UserTokenPosition({
@@ -21,6 +22,7 @@ class UserTokenPosition {
     required this.sector,
     required this.tokensOwned,
     required this.currentPrice,
+    required this.averagePrice,
     required this.variation,
   });
 }
