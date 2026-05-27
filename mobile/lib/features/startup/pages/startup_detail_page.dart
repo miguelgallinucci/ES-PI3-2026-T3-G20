@@ -463,6 +463,19 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
   }
 
   void _goToInvestmentPage(double currentPrice) {
+    final availableTokens = widget.startup.availableTokens?.toInt() ?? 0;
+
+    if (availableTokens <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Esta startup nao possui tokens disponiveis.'),
+          backgroundColor: Color(0xFF102235),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     final tokenPrice =
         'R\$ ${currentPrice.toStringAsFixed(2).replaceAll('.', ',')}';
 
@@ -488,6 +501,8 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
           builder: (context, snapshot) {
             final chartData = _buildTokenChartData(snapshot.data ?? const []);
             final currentPrice = chartData.values.last;
+            final availableTokens = widget.startup.availableTokens?.toInt() ?? 0;
+            final hasAvailableTokens = availableTokens > 0;
 
             return Container(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
@@ -503,11 +518,19 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton.icon(
-                  onPressed: () => _goToInvestmentPage(currentPrice),
-                  icon: const Icon(Icons.rocket_launch_rounded),
-                  label: const Text(
-                    'Investir nesta startup',
-                    style: TextStyle(
+                  onPressed: hasAvailableTokens
+                      ? () => _goToInvestmentPage(currentPrice)
+                      : null,
+                  icon: Icon(
+                    hasAvailableTokens
+                        ? Icons.rocket_launch_rounded
+                        : Icons.block_rounded,
+                  ),
+                  label: Text(
+                    hasAvailableTokens
+                        ? 'Investir nesta startup'
+                        : 'Tokens esgotados',
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
@@ -515,6 +538,8 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
+                    disabledForegroundColor: AppColors.textSecondary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),

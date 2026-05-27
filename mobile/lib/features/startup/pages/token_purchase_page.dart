@@ -45,16 +45,21 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
 
   int get quantity => int.tryParse(quantityController.text) ?? 0;
 
+  int get availableTokens => widget.startup.availableTokens?.toInt() ?? 0;
+
   double get totalValue => quantity * tokenPriceValue;
 
   bool get hasEnoughBalance => totalValue <= _saldoDisponivel;
+
+  bool get hasEnoughTokens => availableTokens > 0 && quantity <= availableTokens;
 
   bool get canConfirm =>
       !_isLoadingSaldo &&
           !_isConfirming &&
           quantity > 0 &&
           tokenPriceValue > 0 &&
-          hasEnoughBalance;
+          hasEnoughBalance &&
+          hasEnoughTokens;
 
   @override
   void initState() {
@@ -99,6 +104,16 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
 
     if (quantity <= 0) {
       _showMessage('Informe uma quantidade válida de tokens.');
+      return;
+    }
+
+    if (availableTokens <= 0) {
+      _showMessage('Esta startup nao possui tokens disponiveis.');
+      return;
+    }
+
+    if (quantity > availableTokens) {
+      _showMessage('A startup possui apenas $availableTokens tokens disponiveis.');
       return;
     }
 
@@ -166,6 +181,9 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
   Widget build(BuildContext context) {
     final bool shouldShowInsufficientBalance =
         quantity > 0 && totalValue > _saldoDisponivel && !_isLoadingSaldo;
+    final bool shouldShowInsufficientTokens =
+        quantity > 0 && quantity > availableTokens;
+    final bool hasNoTokensAvailable = availableTokens <= 0;
 
     return Scaffold(
       body: Container(
@@ -262,10 +280,30 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: _InfoCard(
-                                  label: 'Saldo disponível',
+                                  label: 'Tokens disponiveis',
+                                  value: availableTokens.toString(),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _InfoCard(
+                                  label: 'Saldo disponivel',
                                   value: _isLoadingSaldo
                                       ? 'Carregando...'
                                       : AppFormatters.currency(_saldoDisponivel),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _InfoCard(
+                                  label: 'Status',
+                                  value: hasNoTokensAvailable
+                                      ? 'Esgotado'
+                                      : 'Disponivel',
                                 ),
                               ),
                             ],
@@ -282,11 +320,14 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
                           const SizedBox(height: 10),
                           TextField(
                             controller: quantityController,
+                            enabled: !hasNoTokensAvailable,
                             keyboardType: TextInputType.number,
                             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                             onChanged: (_) => setState(() {}),
                             decoration: InputDecoration(
-                              hintText: 'Ex: 10',
+                              hintText: hasNoTokensAvailable
+                                  ? 'Tokens esgotados'
+                                  : 'Maximo: $availableTokens',
                               hintStyle: const TextStyle(
                                 color: AppColors.textSecondary,
                               ),
@@ -317,6 +358,28 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
                             ),
                             style: const TextStyle(color: Colors.white),
                           ),
+                          if (hasNoTokensAvailable) ...[
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Esta startup nao possui tokens disponiveis para compra direta.',
+                              style: TextStyle(
+                                color: AppColors.primaryLight,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                          if (shouldShowInsufficientTokens) ...[
+                            const SizedBox(height: 10),
+                            Text(
+                              'A startup possui apenas $availableTokens tokens disponiveis.',
+                              style: const TextStyle(
+                                color: AppColors.primaryLight,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                           if (shouldShowInsufficientBalance) ...[
                             const SizedBox(height: 10),
                             const Text(
@@ -386,7 +449,9 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
                               child: Text(
                                 _isConfirming
                                     ? 'Confirmando...'
-                                    : 'Confirmar investimento',
+                                    : hasNoTokensAvailable
+                                        ? 'Tokens esgotados'
+                                        : 'Confirmar investimento',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
