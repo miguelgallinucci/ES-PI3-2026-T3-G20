@@ -121,6 +121,37 @@ class AuthService {
     );
   }
 
+  Future<void> sendEmailMfaCode({
+    required String email,
+  }) async {
+    final cleanEmail = email.trim();
+
+    final callable = _functions.httpsCallable('sendEmailMfaCode');
+
+    await callable.call({
+      'email': cleanEmail,
+    });
+  }
+
+  Future<bool> verifyEmailMfaCode({
+    required String email,
+    required String code,
+  }) async {
+    final cleanEmail = email.trim();
+    final cleanCode = code.trim();
+
+    final callable = _functions.httpsCallable('verifyEmailMfaCode');
+
+    final result = await callable.call({
+      'email': cleanEmail,
+      'code': cleanCode,
+    });
+
+    final data = Map<String, dynamic>.from(result.data as Map);
+
+    return data['valid'] == true;
+  }
+
   Future<void> logout() async {
     await _auth.signOut();
   }
