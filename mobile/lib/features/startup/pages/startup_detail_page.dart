@@ -124,6 +124,127 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
     super.dispose();
   }
 
+  Stream<List<_TokenPricePoint>> _watchTokenPriceHistory() {
+    if (widget.startup.id.trim().isEmpty) {
+      return Stream.value(const []);
+    }
+
+    return FirebaseFirestore.instance
+        .collection('startups')
+        .doc(widget.startup.id)
+        .collection('priceHistory')
+        .orderBy('createdAt')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => _TokenPricePoint.fromMap(doc.data()))
+          .where((point) => point.price > 0)
+          .toList();
+    });
+  }
+
+  _TokenChartData _buildTokenChartData(List<_TokenPricePoint> history) {
+    final fallbackValues = _selectedChartValues;
+    final fallbackLabels = _selectedChartLabels;
+
+    if (history.isEmpty) {
+      return _TokenChartData(
+        values: fallbackValues,
+        labels: fallbackLabels,
+        subtitle: _selectedChartSubtitle,
+      );
+    }
+
+    final filteredHistory = _filterHistoryBySelectedPeriod(history);
+    final visibleHistory = filteredHistory.isEmpty ? history : filteredHistory;
+    final values = <double>[];
+    final labels = <String>[];
+    final firstPoint = visibleHistory.first;
+
+    if (firstPoint.previousPrice != null && firstPoint.previousPrice! > 0) {
+      values.add(firstPoint.previousPrice!);
+      labels.add(_formatChartLabel(firstPoint.createdAt, isInitialPoint: true));
+    }
+
+    for (final point in visibleHistory) {
+      values.add(point.price);
+      labels.add(_formatChartLabel(point.createdAt));
+    }
+
+    if (values.length == 1) {
+      final currentPrice = widget.startup.tokenPrice?.toDouble() ?? values.first;
+      values.insert(0, currentPrice);
+      labels.insert(0, 'Inicio');
+    }
+
+    return _TokenChartData(
+      values: values,
+      labels: labels,
+      subtitle: _selectedRealChartSubtitle,
+    );
+  }
+
+  List<_TokenPricePoint> _filterHistoryBySelectedPeriod(
+    List<_TokenPricePoint> history,
+  ) {
+    final now = DateTime.now();
+    final cutoff = now.subtract(_selectedPeriodDuration);
+
+    return history.where((point) {
+      final createdAt = point.createdAt;
+      if (createdAt == null) return true;
+
+      return createdAt.isAfter(cutoff) || createdAt.isAtSameMomentAs(cutoff);
+    }).toList();
+  }
+
+  Duration get _selectedPeriodDuration {
+    switch (_selectedPeriod) {
+      case ChartPeriod.day:
+        return const Duration(hours: 24);
+      case ChartPeriod.week:
+        return const Duration(days: 7);
+      case ChartPeriod.month:
+        return const Duration(days: 30);
+      case ChartPeriod.sixMonths:
+        return const Duration(days: 183);
+      case ChartPeriod.year:
+        return const Duration(days: 365);
+    }
+  }
+
+  String get _selectedRealChartSubtitle {
+    switch (_selectedPeriod) {
+      case ChartPeriod.day:
+        return 'Historico real das ultimas 24h';
+      case ChartPeriod.week:
+        return 'Historico real dos ultimos 7 dias';
+      case ChartPeriod.month:
+        return 'Historico real dos ultimos 30 dias';
+      case ChartPeriod.sixMonths:
+        return 'Historico real dos ultimos 6 meses';
+      case ChartPeriod.year:
+        return 'Historico real do ultimo ano';
+    }
+  }
+
+  String _formatChartLabel(DateTime? date, {bool isInitialPoint = false}) {
+    if (date == null) {
+      return isInitialPoint ? 'Inicio' : 'Agora';
+    }
+
+    switch (_selectedPeriod) {
+      case ChartPeriod.day:
+        return '${date.hour.toString().padLeft(2, '0')}h';
+      case ChartPeriod.week:
+      case ChartPeriod.month:
+        return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
+      case ChartPeriod.sixMonths:
+      case ChartPeriod.year:
+        return '${date.month.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}';
+    }
+  }
+
   List<double> get _selectedChartValues {
     switch (_selectedPeriod) {
       case ChartPeriod.day:
@@ -342,9 +463,8 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
   }
 
   void _goToInvestmentPage(double currentPrice) {
-    final tokenPrice = widget.startup.tokenPriceText != '-'
-        ? widget.startup.tokenPriceText
-        : 'R\$ ${currentPrice.toStringAsFixed(2).replaceAll('.', ',')}';
+    final tokenPrice =
+        'R\$ ${currentPrice.toStringAsFixed(2).replaceAll('.', ',')}';
 
     Navigator.push(
       context,
@@ -360,49 +480,49 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final chartValues = _selectedChartValues;
-    final chartLabels = _selectedChartLabels;
-
-    final currentPrice = chartValues.last;
-    final firstPrice = chartValues.first;
-    final variation = ((currentPrice - firstPrice) / firstPrice) * 100;
-    final isPositive = variation >= 0;
-
     return Scaffold(
       bottomNavigationBar: SafeArea(
         top: false,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF04111D).withValues(alpha: 0.96),
-            border: Border(
-              top: BorderSide(
-                color: AppColors.border,
-              ),
-            ),
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton.icon(
-              onPressed: () => _goToInvestmentPage(currentPrice),
-              icon: const Icon(Icons.rocket_launch_rounded),
-              label: const Text(
-                'Investir nesta startup',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+        child: StreamBuilder<List<_TokenPricePoint>>(
+          stream: _watchTokenPriceHistory(),
+          builder: (context, snapshot) {
+            final chartData = _buildTokenChartData(snapshot.data ?? const []);
+            final currentPrice = chartData.values.last;
+
+            return Container(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF04111D).withValues(alpha: 0.96),
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.border,
+                  ),
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+              child: SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton.icon(
+                  onPressed: () => _goToInvestmentPage(currentPrice),
+                  icon: const Icon(Icons.rocket_launch_rounded),
+                  label: const Text(
+                    'Investir nesta startup',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
       body: Container(
@@ -450,18 +570,32 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
 
                     const SizedBox(height: 18),
 
-                    StartupTokenOverviewCard(
-                      currentPrice: currentPrice,
-                      variation: variation,
-                      isPositive: isPositive,
-                      chartValues: chartValues,
-                      chartLabels: chartLabels,
-                      subtitle: _selectedChartSubtitle,
-                      selectedPeriod: _selectedPeriod,
-                      onPeriodChanged: (period) {
-                        setState(() {
-                          _selectedPeriod = period;
-                        });
+                    StreamBuilder<List<_TokenPricePoint>>(
+                      stream: _watchTokenPriceHistory(),
+                      builder: (context, snapshot) {
+                        final chartData =
+                            _buildTokenChartData(snapshot.data ?? const []);
+                        final currentPrice = chartData.values.last;
+                        final firstPrice = chartData.values.first;
+                        final variation = firstPrice > 0
+                            ? ((currentPrice - firstPrice) / firstPrice) * 100
+                            : 0.0;
+                        final isPositive = variation >= 0;
+
+                        return StartupTokenOverviewCard(
+                          currentPrice: currentPrice,
+                          variation: variation,
+                          isPositive: isPositive,
+                          chartValues: chartData.values,
+                          chartLabels: chartData.labels,
+                          subtitle: chartData.subtitle,
+                          selectedPeriod: _selectedPeriod,
+                          onPeriodChanged: (period) {
+                            setState(() {
+                              _selectedPeriod = period;
+                            });
+                          },
+                        );
                       },
                     ),
                     const SizedBox(height: 18),
@@ -585,4 +719,62 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
       ),
     );
   }
+}
+
+class _TokenPricePoint {
+  final double price;
+  final double? previousPrice;
+  final DateTime? createdAt;
+
+  const _TokenPricePoint({
+    required this.price,
+    this.previousPrice,
+    this.createdAt,
+  });
+
+  factory _TokenPricePoint.fromMap(Map<String, dynamic> data) {
+    return _TokenPricePoint(
+      price: _toDouble(data['price']),
+      previousPrice: _toNullableDouble(data['previousPrice']),
+      createdAt: _toDateTime(data['createdAt']),
+    );
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+    }
+
+    return 0;
+  }
+
+  static double? _toNullableDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.'));
+    }
+
+    return null;
+  }
+
+  static DateTime? _toDateTime(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+
+    return null;
+  }
+}
+
+class _TokenChartData {
+  final List<double> values;
+  final List<String> labels;
+  final String subtitle;
+
+  const _TokenChartData({
+    required this.values,
+    required this.labels,
+    required this.subtitle,
+  });
 }

@@ -83,6 +83,40 @@ class _WalletPageState extends State<WalletPage> {
     return 0;
   }
 
+  Stream<List<_WalletTokenPricePoint>> _watchTokenPriceHistory(
+    String startupId,
+  ) {
+    if (startupId.trim().isEmpty) {
+      return Stream.value(const []);
+    }
+
+    return FirebaseFirestore.instance
+        .collection('startups')
+        .doc(startupId)
+        .collection('priceHistory')
+        .orderBy('createdAt')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => _WalletTokenPricePoint.fromMap(doc.data()))
+          .where((point) => point.price > 0)
+          .toList();
+    });
+  }
+
+  List<_WalletTokenPricePoint> _last24HourPriceHistory(
+    List<_WalletTokenPricePoint> history,
+  ) {
+    final cutoff = DateTime.now().subtract(const Duration(hours: 24));
+
+    return history.where((point) {
+      final createdAt = point.createdAt;
+      if (createdAt == null) return true;
+
+      return createdAt.isAfter(cutoff) || createdAt.isAtSameMomentAs(cutoff);
+    }).toList();
+  }
+
   List<_TokenPosition> _positionsFromTransactions(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
@@ -157,6 +191,7 @@ class _WalletPageState extends State<WalletPage> {
       }
 
       positions[key] = _TokenPosition(
+        startupId: key,
         startupName: startupName,
         sector: (data['sector'] ?? current?.sector ?? '').toString(),
         quantity: newQuantity,
@@ -340,17 +375,19 @@ class _WalletPageState extends State<WalletPage> {
                         const SizedBox(height: 10),
                         SizedBox(
                           height: 180,
-                          child: _TokenMiniChart(
-                            values: _tokenChartValues(position),
-                            labels: const [
-                              '00h',
-                              '04h',
-                              '08h',
-                              '12h',
-                              '16h',
-                              '20h',
-                              '24h',
-                            ],
+                          child: StreamBuilder<List<_WalletTokenPricePoint>>(
+                            stream: _watchTokenPriceHistory(position.startupId),
+                            builder: (context, snapshot) {
+                              final chartData = _walletTokenChartData(
+                                position,
+                                snapshot.data ?? const [],
+                              );
+
+                              return _TokenMiniChart(
+                                values: chartData.values,
+                                labels: chartData.labels,
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -365,13 +402,44 @@ class _WalletPageState extends State<WalletPage> {
     );
   }
 
-  List<double> _tokenChartValues(_TokenPosition position) {
+  _WalletTokenChartData _walletTokenChartData(
+    _TokenPosition position,
+    List<_WalletTokenPricePoint> history,
+  ) {
+    final realHistory = _last24HourPriceHistory(history);
+
+    if (realHistory.isNotEmpty) {
+      final values = <double>[];
+      final labels = <String>[];
+      final firstPoint = realHistory.first;
+
+      if (firstPoint.previousPrice != null && firstPoint.previousPrice! > 0) {
+        values.add(firstPoint.previousPrice!);
+        labels.add('Inicio');
+      }
+
+      for (final point in realHistory) {
+        values.add(point.price);
+        labels.add(_formatHourLabel(point.createdAt));
+      }
+
+      if (values.length == 1) {
+        values.insert(0, position.averagePrice);
+        labels.insert(0, 'Inicio');
+      }
+
+      return _WalletTokenChartData(values: values, labels: labels);
+    }
+
     final currentPrice = position.tokenPrice > 0
         ? position.tokenPrice
         : position.averagePrice;
 
     if (currentPrice <= 0 && position.averagePrice <= 0) {
-      return const [0, 0, 0, 0, 0, 0, 0];
+      return const _WalletTokenChartData(
+        values: [0, 0, 0, 0, 0, 0, 0],
+        labels: ['00h', '04h', '08h', '12h', '16h', '20h', '24h'],
+      );
     }
 
     final startPrice = position.averagePrice > 0
@@ -379,15 +447,24 @@ class _WalletPageState extends State<WalletPage> {
         : currentPrice;
     final middlePrice = (startPrice + currentPrice) / 2;
 
-    return [
-      startPrice * 0.94,
-      startPrice * 0.98,
-      middlePrice,
-      middlePrice * 1.03,
-      currentPrice * 0.99,
-      currentPrice * 1.01,
-      currentPrice,
-    ];
+    return _WalletTokenChartData(
+      values: [
+        startPrice * 0.94,
+        startPrice * 0.98,
+        middlePrice,
+        middlePrice * 1.03,
+        currentPrice * 0.99,
+        currentPrice * 1.01,
+        currentPrice,
+      ],
+      labels: const ['00h', '04h', '08h', '12h', '16h', '20h', '24h'],
+    );
+  }
+
+  String _formatHourLabel(DateTime? date) {
+    if (date == null) return 'Agora';
+
+    return '${date.hour.toString().padLeft(2, '0')}h';
   }
 
   @override
@@ -637,6 +714,7 @@ class _WalletPageState extends State<WalletPage> {
 }
 
 class _TokenPosition {
+  final String startupId;
   final String startupName;
   final String sector;
   final int quantity;
@@ -645,12 +723,69 @@ class _TokenPosition {
   final double averagePrice;
 
   const _TokenPosition({
+    required this.startupId,
     required this.startupName,
     required this.sector,
     required this.quantity,
     required this.tokenPrice,
     required this.totalInvested,
     required this.averagePrice,
+  });
+}
+
+class _WalletTokenPricePoint {
+  final double price;
+  final double? previousPrice;
+  final DateTime? createdAt;
+
+  const _WalletTokenPricePoint({
+    required this.price,
+    this.previousPrice,
+    this.createdAt,
+  });
+
+  factory _WalletTokenPricePoint.fromMap(Map<String, dynamic> data) {
+    return _WalletTokenPricePoint(
+      price: _toDouble(data['price']),
+      previousPrice: _toNullableDouble(data['previousPrice']),
+      createdAt: _toDateTime(data['createdAt']),
+    );
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+    }
+
+    return 0;
+  }
+
+  static double? _toNullableDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.'));
+    }
+
+    return null;
+  }
+
+  static DateTime? _toDateTime(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+
+    return null;
+  }
+}
+
+class _WalletTokenChartData {
+  final List<double> values;
+  final List<String> labels;
+
+  const _WalletTokenChartData({
+    required this.values,
+    required this.labels,
   });
 }
 
