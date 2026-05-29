@@ -68,6 +68,17 @@ export const createUserProfile = functions.https.onCall(async (data, context) =>
     );
   }
 
+  /// desenvolvido por Miguel Gallinucci
+  const cleanCpf = cpf.trim();
+  const normalizedCpf = cleanCpf.replace(/\D/g, '');
+
+  if (normalizedCpf === '') {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'O CPF informado Ã© invÃ¡lido.'
+    );
+  }
+
   if (!phone || typeof phone !== 'string' || phone.trim() === '') {
     throw new functions.https.HttpsError(
       'invalid-argument',
@@ -79,13 +90,38 @@ export const createUserProfile = functions.https.onCall(async (data, context) =>
   try {
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
+    /// desenvolvido por Miguel Gallinucci
+    const cpfValues = Array.from(new Set([cleanCpf, normalizedCpf]));
+    const [normalizedCpfSnapshot, cpfSnapshot] = await Promise.all([
+      db.collection('users')
+        .where('cpfNormalized', '==', normalizedCpf)
+        .limit(10)
+        .get(),
+      db.collection('users')
+        .where('cpf', 'in', cpfValues)
+        .limit(10)
+        .get(),
+    ]);
+
+    const cpfAlreadyUsed = [
+      ...normalizedCpfSnapshot.docs,
+      ...cpfSnapshot.docs,
+    ].some((doc) => doc.id !== uid);
+
+    if (cpfAlreadyUsed) {
+      throw new functions.https.HttpsError(
+        'already-exists',
+        'JÃ¡ existe uma conta cadastrada com este CPF.'
+      );
+    }
 
     if (!userDoc.exists) {
       // Cria um novo perfil
       await userRef.set({
         fullName: fullName.trim(),
         email: email,
-        cpf: cpf.trim(),
+        cpf: cleanCpf,
+        cpfNormalized: normalizedCpf,
         phone: phone.trim(),
         role: 'investidor',
         mfaEnabled: false,
@@ -98,7 +134,8 @@ export const createUserProfile = functions.https.onCall(async (data, context) =>
       await userRef.update({
         fullName: fullName.trim(),
         email: email,
-        cpf: cpf.trim(),
+        cpf: cleanCpf,
+        cpfNormalized: normalizedCpf,
         phone: phone.trim(),
       });
       console.log(`Perfil ATUALIZADO no Firestore para uid=${uid}`);
@@ -107,6 +144,10 @@ export const createUserProfile = functions.https.onCall(async (data, context) =>
     console.log('createUserProfile concluído com sucesso');
     return { success: true, message: 'Perfil do usuário processado com sucesso.' };
   } catch (error: any) {
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+
     console.error('Erro ao criar/atualizar perfil do usuário:', error?.message || error);
     throw new functions.https.HttpsError(
       'internal',

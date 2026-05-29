@@ -3,6 +3,8 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+class DuplicateCpfException implements Exception {}
+
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -40,6 +42,13 @@ class AuthService {
     final cleanCpf = cpf.trim();
     final cleanPhone = phone.trim();
 
+    /// desenvolvido por Miguel Gallinucci
+    final normalizedCpf = cleanCpf.replaceAll(RegExp(r'\D'), '');
+
+    if (await _isCpfAlreadyRegistered(cleanCpf, normalizedCpf)) {
+      throw DuplicateCpfException();
+    }
+
     // 1. Cria o usuário no Firebase Auth
     final credential = await _auth.createUserWithEmailAndPassword(
       email: cleanEmail,
@@ -69,6 +78,12 @@ class AuthService {
       debugPrint('Perfil criado via Cloud Function para uid=${user.uid}');
     } catch (e) {
       debugPrint('Erro ao criar perfil no backend: $e');
+      try {
+        await user.delete();
+        debugPrint('Usuario removido do Auth apos falha ao criar perfil.');
+      } catch (deleteError) {
+        debugPrint('Erro ao remover usuario sem perfil: $deleteError');
+      }
       // Propaga o erro para a UI informar o usuário.
       // O cadastro no Auth já foi feito, mas sem perfil no Firestore
       // o app não funcionará corretamente.
@@ -76,6 +91,42 @@ class AuthService {
     }
 
     return credential;
+  }
+
+  /// desenvolvido por Miguel Gallinucci
+  Future<bool> _isCpfAlreadyRegistered(
+    String cleanCpf,
+    String normalizedCpf,
+  ) async {
+    final cpfValues = <String>{cleanCpf, normalizedCpf}
+        .where((value) => value.trim().isNotEmpty)
+        .toList();
+
+    final checks = <Future<QuerySnapshot<Map<String, dynamic>>>>[];
+
+    if (normalizedCpf.isNotEmpty) {
+      checks.add(
+        _firestore
+            .collection('users')
+            .where('cpfNormalized', isEqualTo: normalizedCpf)
+            .limit(1)
+            .get(),
+      );
+    }
+
+    if (cpfValues.isNotEmpty) {
+      checks.add(
+        _firestore
+            .collection('users')
+            .where('cpf', whereIn: cpfValues)
+            .limit(1)
+            .get(),
+      );
+    }
+
+    final snapshots = await Future.wait(checks);
+
+    return snapshots.any((snapshot) => snapshot.docs.isNotEmpty);
   }
 
   Future<void> sendPasswordResetEmail({

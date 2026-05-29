@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -112,6 +113,17 @@ class _RegisterPageState extends State<RegisterPage> {
     } on FirebaseAuthException catch (error) {
       setState(() {
         _errorMessage = _getFirebaseErrorMessage(error.code);
+      });
+      /// desenvolvido por Miguel Gallinucci
+    } on DuplicateCpfException {
+      setState(() {
+        _errorMessage = 'JÃ¡ existe uma conta cadastrada com este CPF.';
+      });
+    } on FirebaseFunctionsException catch (error) {
+      setState(() {
+        _errorMessage = error.code == 'already-exists'
+            ? 'JÃ¡ existe uma conta cadastrada com este CPF.'
+            : 'NÃ£o foi possÃ­vel criar a conta. Tente novamente.';
       });
     } catch (_) {
       setState(() {
