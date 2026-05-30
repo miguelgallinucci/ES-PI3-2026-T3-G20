@@ -9,6 +9,7 @@ function roundTokenPrice(value: number): number {
     return Number(value.toFixed(4));
 }
 
+/// desenvolvido por Miguel Gallinucci - ajusta o preco oficial usando media recente do balcao.
 function calculateMarketAdjustedPrice(currentPrice: number, marketAveragePrice: number): number {
     if (currentPrice <= 0) {
         return roundTokenPrice(marketAveragePrice);
@@ -24,6 +25,7 @@ function calculateMarketAdjustedPrice(currentPrice: number, marketAveragePrice: 
     );
 }
 
+/// desenvolvido por Miguel Gallinucci - processa compra no balcao entre investidor comprador e vendedor.
 export const buyMarketOffer = functions.https.onCall(async (data, context) => {
     if (!context.auth || !context.auth.uid) {
         throw new functions.https.HttpsError(

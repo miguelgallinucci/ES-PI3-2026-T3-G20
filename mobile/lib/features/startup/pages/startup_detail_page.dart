@@ -124,6 +124,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
     super.dispose();
   }
 
+  /// desenvolvido por Miguel Gallinucci - le o historico de precos salvo na startup.
   Stream<List<_TokenPricePoint>> _watchTokenPriceHistory() {
     if (widget.startup.id.trim().isEmpty) {
       return Stream.value(const []);
@@ -143,6 +144,7 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
     });
   }
 
+  /// desenvolvido por Miguel Gallinucci - transforma o historico real no grafico do token.
   _TokenChartData _buildTokenChartData(List<_TokenPricePoint> history) {
     final fallbackValues = _selectedChartValues;
     final fallbackLabels = _selectedChartLabels;

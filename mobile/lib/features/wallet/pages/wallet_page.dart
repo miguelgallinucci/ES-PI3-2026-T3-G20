@@ -83,6 +83,7 @@ class _WalletPageState extends State<WalletPage> {
     return 0;
   }
 
+  /// desenvolvido por Miguel Gallinucci - acompanha o historico real do preco do token.
   Stream<List<_WalletTokenPricePoint>> _watchTokenPriceHistory(
     String startupId,
   ) {
@@ -126,6 +127,7 @@ class _WalletPageState extends State<WalletPage> {
     }).toList();
   }
 
+  /// desenvolvido por Miguel Gallinucci - monta os tokens da carteira a partir do historico.
   List<_TokenPosition> _positionsFromTransactions(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
@@ -214,6 +216,7 @@ class _WalletPageState extends State<WalletPage> {
       ..sort((a, b) => a.startupName.compareTo(b.startupName));
   }
 
+  /// desenvolvido por Miguel Gallinucci - abre os detalhes reais do token selecionado.
   void _showTokenDetails(_TokenPosition position) {
     showModalBottomSheet(
       context: context,
@@ -462,6 +465,7 @@ class _WalletPageState extends State<WalletPage> {
     );
   }
 
+  /// desenvolvido por Miguel Gallinucci - prepara o grafico de 24h do token da carteira.
   _WalletTokenChartData _walletTokenChartData(
     _TokenPosition position,
     List<_WalletTokenPricePoint> history, {
@@ -660,6 +664,7 @@ class _WalletPageState extends State<WalletPage> {
     );
   }
 
+  /// desenvolvido por Miguel Gallinucci - exibe o historico financeiro da carteira.
   Widget _buildTransactionsSection() {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: _walletService.watchUserTransactions(),

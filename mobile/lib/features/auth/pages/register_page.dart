@@ -114,7 +114,7 @@ class _RegisterPageState extends State<RegisterPage> {
       setState(() {
         _errorMessage = _getFirebaseErrorMessage(error.code);
       });
-      /// desenvolvido por Miguel Gallinucci
+      /// desenvolvido por Miguel Gallinucci - exibe mensagem quando o CPF ja esta cadastrado.
     } on DuplicateCpfException {
       setState(() {
         _errorMessage = 'JÃ¡ existe uma conta cadastrada com este CPF.';

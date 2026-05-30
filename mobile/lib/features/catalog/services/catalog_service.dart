@@ -26,6 +26,7 @@ class CatalogService {
     });
   }
 
+  /// desenvolvido por Miguel Gallinucci - lista ofertas abertas do balcao para compra.
   Stream<List<AvailableOffer>> watchOpenOffers() {
     final uid = currentUserId;
 
@@ -76,6 +77,7 @@ class CatalogService {
     });
   }
 
+  /// desenvolvido por Miguel Gallinucci - lista ofertas abertas criadas pelo usuario logado.
   Stream<List<AvailableOffer>> watchCurrentUserOpenOffers() {
     final uid = currentUserId;
 
@@ -128,6 +130,7 @@ class CatalogService {
     });
   }
 
+  /// desenvolvido por Miguel Gallinucci - monta a carteira atual a partir do historico de transacoes.
   Stream<List<UserTokenPosition>> watchCurrentUserPositions() {
     final uid = currentUserId;
 
@@ -249,6 +252,7 @@ class CatalogService {
     });
   }
 
+  /// desenvolvido por Miguel Gallinucci - envia para o backend a criacao de oferta de venda.
   Future<void> createSellOffer({
     required String startupId,
     required int quantity,
@@ -262,6 +266,7 @@ class CatalogService {
     });
   }
 
+  /// desenvolvido por Miguel Gallinucci - compra uma oferta completa do balcao.
   Future<void> buyMarketOffer({required String offerId}) async {
     final callable = _functions.httpsCallable('buyMarketOffer');
     await callable.call({
@@ -269,6 +274,7 @@ class CatalogService {
     });
   }
 
+  /// desenvolvido por Miguel Gallinucci - compra uma quantidade parcial de uma oferta do balcao.
   Future<void> buyMarketOfferQuantity({
     required String offerId,
     required int quantity,
@@ -280,6 +286,7 @@ class CatalogService {
     });
   }
 
+  /// desenvolvido por Miguel Gallinucci - cancela uma oferta de venda do usuario.
   Future<void> cancelSellOffer({required String offerId}) async {
     final callable = _functions.httpsCallable('cancelSellOffer');
     await callable.call({
@@ -302,6 +309,7 @@ class CatalogService {
     return 0;
   }
 
+  /// desenvolvido por Miguel Gallinucci - calcula variacao da oferta contra o preco atual do token.
   String _formatOfferVariation(double offerPrice, double currentPrice) {
     if (offerPrice <= 0 || currentPrice <= 0) return '+0.0%';
 

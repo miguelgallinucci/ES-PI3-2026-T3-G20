@@ -13,6 +13,7 @@ function roundTokenPrice(value: number): number {
     return Number(value.toFixed(4));
 }
 
+/// desenvolvido por Miguel Gallinucci - calcula a valorizacao do token pela demanda da compra direta.
 function calculateDemandAdjustedPrice(currentPrice: number, quantity: number, totalTokens: number): number {
     if (currentPrice <= 0 || quantity <= 0 || totalTokens <= 0) {
         return currentPrice;
@@ -24,6 +25,7 @@ function calculateDemandAdjustedPrice(currentPrice: number, quantity: number, to
     return roundTokenPrice(currentPrice * (1 + impact));
 }
 
+/// desenvolvido por Miguel Gallinucci - compra tokens, atualiza carteira, saldo e historico de preco.
 export const buyTokens = functions.https.onCall(async (data, context) => {
     if (!context.auth || !context.auth.uid) {
         throw new functions.https.HttpsError(

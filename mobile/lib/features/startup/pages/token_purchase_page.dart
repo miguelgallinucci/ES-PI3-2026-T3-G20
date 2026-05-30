@@ -45,6 +45,7 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
 
   int get quantity => int.tryParse(quantityController.text) ?? 0;
 
+  /// desenvolvido por Miguel Gallinucci - usa os tokens disponiveis para bloquear compra esgotada.
   int get availableTokens => widget.startup.availableTokens?.toInt() ?? 0;
 
   double get totalValue => quantity * tokenPriceValue;
@@ -96,6 +97,7 @@ class _TokenPurchasePageState extends State<TokenPurchasePage> {
   }
 
 
+  /// desenvolvido por Miguel Gallinucci - confirma compra validando saldo e estoque de tokens.
   Future<void> _confirmInvestment() async {
     if (_purchaseService.currentUserId == null) {
       _showMessage('Você precisa estar logado para investir.');

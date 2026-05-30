@@ -68,7 +68,7 @@ export const createUserProfile = functions.https.onCall(async (data, context) =>
     );
   }
 
-  /// desenvolvido por Miguel Gallinucci
+  /// desenvolvido por Miguel Gallinucci - normaliza o CPF recebido antes de salvar.
   const cleanCpf = cpf.trim();
   const normalizedCpf = cleanCpf.replace(/\D/g, '');
 
@@ -90,7 +90,7 @@ export const createUserProfile = functions.https.onCall(async (data, context) =>
   try {
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
-    /// desenvolvido por Miguel Gallinucci
+    /// desenvolvido por Miguel Gallinucci - consulta CPFs existentes para impedir cadastro duplicado.
     const cpfValues = Array.from(new Set([cleanCpf, normalizedCpf]));
     const [normalizedCpfSnapshot, cpfSnapshot] = await Promise.all([
       db.collection('users')

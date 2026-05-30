@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { db } from '../../shared/firebase';
 
+/// desenvolvido por Miguel Gallinucci - cria oferta de venda reservando tokens da carteira.
 export const createSellOffer = functions.https.onCall(async (data, context) => {
     if (!context.auth || !context.auth.uid) {
         throw new functions.https.HttpsError(
@@ -61,6 +62,7 @@ export const createSellOffer = functions.https.onCall(async (data, context) => {
             let ledgerTotalInvested = 0;
             let ledgerTokenPrice = 0;
 
+            /// desenvolvido por Miguel Gallinucci - reconstroi a posicao por transacoes antes de vender.
             const orderedTransactionDocs = [...userTransactionsSnapshot.docs].sort((a, b) => {
                 const aCreatedAt = a.data().createdAt;
                 const bCreatedAt = b.data().createdAt;

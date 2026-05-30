@@ -532,6 +532,7 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
+  /// desenvolvido por Miguel Gallinucci - compra uma oferta aberta no balcao.
   Future<void> _buyMarketOffer(AvailableOffer offer) async {
     try {
       await _startupService.buyMarketOffer(offerId: offer.id);
@@ -548,6 +549,7 @@ class _CatalogPageState extends State<CatalogPage> {
     }
   }
 
+  /// desenvolvido por Miguel Gallinucci - compra quantidade parcial de uma oferta do balcao.
   Future<void> _buyMarketOfferQuantity(
     AvailableOffer offer,
     int quantity,
@@ -610,6 +612,7 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
+  /// desenvolvido por Miguel Gallinucci - cancela oferta propria e retorna tokens para carteira.
   Future<void> _cancelSellOffer(AvailableOffer offer) async {
     try {
       await _startupService.cancelSellOffer(offerId: offer.id);
@@ -751,6 +754,7 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
+  /// desenvolvido por Miguel Gallinucci - abre o fluxo para publicar oferta de venda.
   void _openSellOfferSheet(BuildContext context, UserTokenPosition position) {
     showModalBottomSheet(
       context: context,

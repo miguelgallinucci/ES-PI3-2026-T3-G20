@@ -42,7 +42,7 @@ class AuthService {
     final cleanCpf = cpf.trim();
     final cleanPhone = phone.trim();
 
-    /// desenvolvido por Miguel Gallinucci
+    /// desenvolvido por Miguel Gallinucci - normaliza o CPF para comparar sem mascara.
     final normalizedCpf = cleanCpf.replaceAll(RegExp(r'\D'), '');
 
     if (await _isCpfAlreadyRegistered(cleanCpf, normalizedCpf)) {
@@ -93,7 +93,7 @@ class AuthService {
     return credential;
   }
 
-  /// desenvolvido por Miguel Gallinucci
+  /// desenvolvido por Miguel Gallinucci - verifica se ja existe uma conta com o CPF informado.
   Future<bool> _isCpfAlreadyRegistered(
     String cleanCpf,
     String normalizedCpf,

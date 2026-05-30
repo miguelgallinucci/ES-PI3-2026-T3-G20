@@ -35,6 +35,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return _firestore.collection('startups').snapshots();
   }
 
+  /// desenvolvido por Miguel Gallinucci - calcula os indicadores reais de investimentos.
   _DashboardData _buildDashboardData(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> transactionDocs,
     List<QueryDocumentSnapshot<Map<String, dynamic>>> startupDocs,
@@ -93,6 +94,7 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  /// desenvolvido por Miguel Gallinucci - reconstrui as posicoes do dashboard por transacoes.
   List<_DashboardPosition> _positionsFromTransactions(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
@@ -171,6 +173,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return positions.values.where((position) => position.quantity > 0).toList();
   }
 
+  /// desenvolvido por Miguel Gallinucci - monta o grafico de patrimonio pelo periodo escolhido.
   _ChartData _buildWalletChartData(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
     double currentValue,

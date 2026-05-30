@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { db } from '../../shared/firebase';
 
+/// desenvolvido por Miguel Gallinucci - cancela oferta aberta e devolve tokens para a carteira.
 export const cancelSellOffer = functions.https.onCall(async (data, context) => {
     if (!context.auth || !context.auth.uid) {
         throw new functions.https.HttpsError(
