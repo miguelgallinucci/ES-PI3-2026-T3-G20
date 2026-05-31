@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,6 +14,10 @@ class CatalogService {
 
   String? get currentUserId => _auth.currentUser?.uid;
 
+  // Lê as startups em tempo real diretamente do Firestore.
+  // O acesso de leitura direto é seguro e segue as melhores práticas,
+  // pois as regras de segurança do Firestore (allow read: if signedIn())
+  // garantem que apenas usuários autenticados tenham acesso ao catálogo.
   Stream<List<StartupModel>> watchStartups() {
     return _firestore.collection('startups').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -26,7 +31,7 @@ class CatalogService {
     });
   }
 
-  /// desenvolvido por Miguel Gallinucci - lista ofertas abertas do balcao para compra.
+  // desenvolvido por Miguel Gallinucci - lista ofertas abertas do balcao para compra.
   Stream<List<AvailableOffer>> watchOpenOffers() {
     final uid = currentUserId;
 
@@ -77,7 +82,7 @@ class CatalogService {
     });
   }
 
-  /// desenvolvido por Miguel Gallinucci - lista ofertas abertas criadas pelo usuario logado.
+  // desenvolvido por Miguel Gallinucci - lista ofertas abertas criadas pelo usuario logado.
   Stream<List<AvailableOffer>> watchCurrentUserOpenOffers() {
     final uid = currentUserId;
 
@@ -130,7 +135,7 @@ class CatalogService {
     });
   }
 
-  /// desenvolvido por Miguel Gallinucci - monta a carteira atual a partir do historico de transacoes.
+  // desenvolvido por Miguel Gallinucci - monta a carteira atual a partir do historico de transacoes.
   Stream<List<UserTokenPosition>> watchCurrentUserPositions() {
     final uid = currentUserId;
 
@@ -252,7 +257,7 @@ class CatalogService {
     });
   }
 
-  /// desenvolvido por Miguel Gallinucci - envia para o backend a criacao de oferta de venda.
+  // desenvolvido por Miguel Gallinucci - envia para o backend a criacao de oferta de venda.
   Future<void> createSellOffer({
     required String startupId,
     required int quantity,
@@ -266,7 +271,7 @@ class CatalogService {
     });
   }
 
-  /// desenvolvido por Miguel Gallinucci - compra uma oferta completa do balcao.
+  // desenvolvido por Miguel Gallinucci - compra uma oferta completa do balcao.
   Future<void> buyMarketOffer({required String offerId}) async {
     final callable = _functions.httpsCallable('buyMarketOffer');
     await callable.call({
@@ -274,7 +279,7 @@ class CatalogService {
     });
   }
 
-  /// desenvolvido por Miguel Gallinucci - compra uma quantidade parcial de uma oferta do balcao.
+  // desenvolvido por Miguel Gallinucci - compra uma quantidade parcial de uma oferta do balcao.
   Future<void> buyMarketOfferQuantity({
     required String offerId,
     required int quantity,
@@ -286,7 +291,7 @@ class CatalogService {
     });
   }
 
-  /// desenvolvido por Miguel Gallinucci - cancela uma oferta de venda do usuario.
+  // desenvolvido por Miguel Gallinucci - cancela uma oferta de venda do usuario.
   Future<void> cancelSellOffer({required String offerId}) async {
     final callable = _functions.httpsCallable('cancelSellOffer');
     await callable.call({
@@ -309,7 +314,7 @@ class CatalogService {
     return 0;
   }
 
-  /// desenvolvido por Miguel Gallinucci - calcula variacao da oferta contra o preco atual do token.
+  // desenvolvido por Miguel Gallinucci - calcula variacao da oferta contra o preco atual do token.
   String _formatOfferVariation(double offerPrice, double currentPrice) {
     if (offerPrice <= 0 || currentPrice <= 0) return '+0.0%';
 

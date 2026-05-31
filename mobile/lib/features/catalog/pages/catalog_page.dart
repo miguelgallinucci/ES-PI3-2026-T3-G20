@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:flutter/material.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/services.dart';
@@ -404,49 +405,6 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
-
-  void _showBuyOfferDialog(BuildContext context, AvailableOffer offer) {
-    final total = offer.quantity * offer.unitPrice;
-
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF102235),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'Confirmar compra',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          'Você está comprando ${offer.quantity} tokens da ${offer.startup} por ${AppFormatters.currency(total)}.',
-          style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await _buyMarketOffer(offer);
-            },
-            child: const Text(
-              'Comprar',
-              style: TextStyle(
-                color: AppColors.primaryLight,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showBuyQuantityDialog(BuildContext context, AvailableOffer offer) {
     final quantityController =
         TextEditingController(text: offer.quantity.toString());
@@ -532,24 +490,9 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
-  /// desenvolvido por Miguel Gallinucci - compra uma oferta aberta no balcao.
-  Future<void> _buyMarketOffer(AvailableOffer offer) async {
-    try {
-      await _startupService.buyMarketOffer(offerId: offer.id);
 
-      if (!mounted) return;
 
-      _showBuyResultDialog(offer);
-    } catch (error) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_friendlyFunctionError(error))),
-      );
-    }
-  }
-
-  /// desenvolvido por Miguel Gallinucci - compra quantidade parcial de uma oferta do balcao.
+  // desenvolvido por Miguel Gallinucci - compra quantidade parcial de uma oferta do balcao.
   Future<void> _buyMarketOfferQuantity(
     AvailableOffer offer,
     int quantity,
@@ -612,7 +555,7 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
-  /// desenvolvido por Miguel Gallinucci - cancela oferta propria e retorna tokens para carteira.
+  // desenvolvido por Miguel Gallinucci - cancela oferta propria e retorna tokens para carteira.
   Future<void> _cancelSellOffer(AvailableOffer offer) async {
     try {
       await _startupService.cancelSellOffer(offerId: offer.id);
@@ -700,33 +643,6 @@ class _CatalogPageState extends State<CatalogPage> {
     return 'Nao foi possivel concluir a operacao. Tente novamente.';
   }
 
-  void _showBuyResultDialog(AvailableOffer offer) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF102235),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          'Compra confirmada',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: Text(
-          'A compra dos tokens da ${offer.startup} foi concluída com sucesso.',
-          style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Fechar',
-              style: TextStyle(color: AppColors.primaryLight),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showBuyQuantityResultDialog(AvailableOffer offer, int quantity) {
     showDialog(
       context: context,
@@ -754,7 +670,7 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
-  /// desenvolvido por Miguel Gallinucci - abre o fluxo para publicar oferta de venda.
+  // desenvolvido por Miguel Gallinucci - abre o fluxo para publicar oferta de venda.
   void _openSellOfferSheet(BuildContext context, UserTokenPosition position) {
     showModalBottomSheet(
       context: context,

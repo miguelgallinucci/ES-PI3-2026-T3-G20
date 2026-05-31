@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -22,6 +23,10 @@ class WalletPage extends StatefulWidget {
 class _WalletPageState extends State<WalletPage> {
   final WalletService _walletService = WalletService();
 
+  // Abre o BottomSheet para adicionar saldo fictício.
+  // O valor selecionado não é escrito no Firestore pelo Flutter;
+  // ele é enviado via Cloud Function 'addSimulatedBalance' para validação e
+  // escrita atômica, garantindo integridade e centralização da regra de negócio.
   Future<void> _showAddBalanceModal() async {
     final selectedAmount = await showModalBottomSheet<double>(
       context: context,
@@ -83,7 +88,7 @@ class _WalletPageState extends State<WalletPage> {
     return 0;
   }
 
-  /// desenvolvido por Miguel Gallinucci - acompanha o historico real do preco do token.
+  // desenvolvido por Miguel Gallinucci - acompanha o historico real do preco do token.
   Stream<List<_WalletTokenPricePoint>> _watchTokenPriceHistory(
     String startupId,
   ) {
@@ -127,7 +132,7 @@ class _WalletPageState extends State<WalletPage> {
     }).toList();
   }
 
-  /// desenvolvido por Miguel Gallinucci - monta os tokens da carteira a partir do historico.
+  // desenvolvido por Miguel Gallinucci - monta os tokens da carteira a partir do historico.
   List<_TokenPosition> _positionsFromTransactions(
     List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
   ) {
@@ -216,7 +221,7 @@ class _WalletPageState extends State<WalletPage> {
       ..sort((a, b) => a.startupName.compareTo(b.startupName));
   }
 
-  /// desenvolvido por Miguel Gallinucci - abre os detalhes reais do token selecionado.
+  // desenvolvido por Miguel Gallinucci - abre os detalhes reais do token selecionado.
   void _showTokenDetails(_TokenPosition position) {
     showModalBottomSheet(
       context: context,
@@ -465,7 +470,7 @@ class _WalletPageState extends State<WalletPage> {
     );
   }
 
-  /// desenvolvido por Miguel Gallinucci - prepara o grafico de 24h do token da carteira.
+  // desenvolvido por Miguel Gallinucci - prepara o grafico de 24h do token da carteira.
   _WalletTokenChartData _walletTokenChartData(
     _TokenPosition position,
     List<_WalletTokenPricePoint> history, {
@@ -664,7 +669,11 @@ class _WalletPageState extends State<WalletPage> {
     );
   }
 
-  /// desenvolvido por Miguel Gallinucci - exibe o historico financeiro da carteira.
+  // desenvolvido por Miguel Gallinucci - exibe o historico financeiro da carteira.
+  // Constrói o histórico de movimentações lendo da coleção 'transactions'.
+  // As transações são criadas exclusivamente pelo backend (Cloud Functions).
+  // A regra do Firestore 'allow write: if false' para transações garante que
+  // o histórico não pode ser falsificado via client-side.
   Widget _buildTransactionsSection() {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: _walletService.watchUserTransactions(),

@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -9,11 +10,9 @@ import '../services/auth_service.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_background.dart';
-// Desenvolvido por Alycia Santos Bond
 // Tela de cadastro do aplicativo MesclaInvest
-
-/// Página de cadastro do aplicativo MesclaInvest.
-/// Exibe o formulário de registro e envia dados para criação de conta.
+// Página de cadastro do aplicativo MesclaInvest.
+// Exibe o formulário de registro e envia dados para criação de conta.
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
 
@@ -21,8 +20,8 @@ class RegisterPage extends StatefulWidget {
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
-/// Estado da página de cadastro.
-/// Gerencia os controladores de entrada, validação de dados e criação de conta via Firebase.
+// Estado da página de cadastro.
+// Gerencia os controladores de entrada, validação de dados e criação de conta via Firebase.
 class _RegisterPageState extends State<RegisterPage> {
   final AuthService _authService = AuthService();
 
@@ -38,7 +37,7 @@ class _RegisterPageState extends State<RegisterPage> {
   // Estado de carregamento e mensagem de erro
   bool _isLoading = false;
 
-  /// desenvolvido por Miguel Gallinucci - guarda se a conta deve nascer com 2FA ativo.
+  // desenvolvido por Miguel Gallinucci - guarda se a conta deve nascer com 2FA ativo.
   bool _enableMfa = false;
   String? _errorMessage;
 
@@ -54,9 +53,13 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  /// Realiza o cadastro de um novo usuário.
-  /// Valida todos os campos, verifica se as senhas conferem, cria a conta no Firebase
-  /// e navega para a página de catálogo após sucesso.
+  // Realiza o cadastro de um novo usuário.
+  // Fluxo completo:
+  // 1. Valida campos de UI (preenchimento, senhas iguais, tamanho)
+  // 2. Chama AuthService.register para iniciar o fluxo no Firebase
+  // 3. Captura e converte FirebaseAuthException (erros de Auth)
+  // 4. Captura e converte FirebaseFunctionsException (erros da Cloud Function, ex: CPF duplicado)
+  // 5. Navega para CatalogPage em caso de sucesso.
   Future<void> _register() async {
     final fullName = _fullNameController.text.trim();
     final email = _emailController.text.trim();
@@ -117,16 +120,11 @@ class _RegisterPageState extends State<RegisterPage> {
         _errorMessage = _getFirebaseErrorMessage(error.code);
       });
 
-      /// desenvolvido por Miguel Gallinucci - exibe mensagem quando o CPF ja esta cadastrado.
-    } on DuplicateCpfException {
-      setState(() {
-        _errorMessage = 'JÃ¡ existe uma conta cadastrada com este CPF.';
-      });
     } on FirebaseFunctionsException catch (error) {
       setState(() {
         _errorMessage = error.code == 'already-exists'
-            ? 'JÃ¡ existe uma conta cadastrada com este CPF.'
-            : 'NÃ£o foi possÃ­vel criar a conta. Tente novamente.';
+            ? 'Já existe uma conta cadastrada com este CPF.'
+            : 'Não foi possível criar a conta. Tente novamente.';
       });
     } catch (_) {
       setState(() {
@@ -141,7 +139,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  /// Converte códigos de erro do Firebase em mensagens em português para o usuário.
+  // Converte códigos de erro do Firebase em mensagens em português para o usuário.
   String _getFirebaseErrorMessage(String code) {
     switch (code) {
       case 'email-already-in-use':

@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -29,6 +30,9 @@ class WalletService {
     return userRef.snapshots();
   }
 
+  // Retorna o stream do histórico de transações do usuário logado.
+  // As regras do Firestore garantem que o usuário só pode ler suas próprias transações
+  // (resource.data.userId == request.auth.uid) e proíbem qualquer escrita (allow write: if false).
   Stream<QuerySnapshot<Map<String, dynamic>>> watchUserTransactions() {
     final uid = currentUserId;
 
@@ -52,6 +56,10 @@ class WalletService {
     return userRef.collection('positions').snapshots();
   }
 
+  // Adiciona saldo fictício à carteira do usuário.
+  // Chama a Cloud Function 'addSimulatedBalance' enviando o valor desejado.
+  // A Cloud Function valida se o valor é positivo e realiza a atualização
+  // usando uma transação atômica do Firestore, garantindo consistência no backend.
   Future<void> addSimulatedBalance(double amount) async {
     if (amount <= 0) {
       throw Exception('O valor precisa ser maior que zero.');

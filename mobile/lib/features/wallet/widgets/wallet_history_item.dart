@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 // Widget responsável por exibir uma movimentação no histórico da carteira.
 //
 // Isola o card visual de transação, mantendo a WalletPage focada na leitura
@@ -6,15 +7,15 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 
 class WalletHistoryItem extends StatelessWidget {
-  /// Título da transação (ex: "Adição de saldo")
+  // Título da transação (ex: "Adição de saldo")
   final String title;
-  /// Subtítulo/tipo da transação (ex: "Crédito interno")
+  // Subtítulo/tipo da transação (ex: "Crédito interno")
   final String subtitle;
-  /// Valor da transação formatado em moeda
+  // Valor da transação formatado em moeda
   final String value;
-  /// Data da transação formatada
+  // Data da transação formatada
   final String date;
-  /// Indica se a transação é de crédito ou débito
+  // Indica se a transação é de crédito ou débito
   final bool isCredit;
 
   const WalletHistoryItem({
@@ -26,8 +27,8 @@ class WalletHistoryItem extends StatelessWidget {
     required this.isCredit,
   });
 
-  /// Retorna o ícone apropriado baseado no tipo de transação
-  /// Crédito interno usa ícone de cartão, outros usam ícone de recibo
+  // Retorna o ícone apropriado baseado no tipo de transação
+  // Crédito interno usa ícone de cartão, outros usam ícone de recibo
   IconData get _icon {
     if (isCredit) {
       return Icons.add_card_rounded;

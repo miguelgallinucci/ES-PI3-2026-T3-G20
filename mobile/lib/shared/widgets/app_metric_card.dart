@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 // Widget global usado para exibir métricas rápidas e indicadores em cards compactos.
 //
 // Padroniza a exibição de informações como “Total Investido”, “Capital Aportado”,
@@ -6,16 +7,16 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
 class AppMetricCard extends StatelessWidget {
-  /// Rótulo da métrica (ex: “Tokens disponíveis”).
+  // Rótulo da métrica (ex: “Tokens disponíveis”).
   final String label;
 
-  /// Valor da métrica (ex: “R$ 5.000,00” ou “1.250”).
+  // Valor da métrica (ex: “R$ 5.000,00” ou “1.250”).
   final String value;
 
-  /// Ícone que representa a métrica.
+  // Ícone que representa a métrica.
   final IconData icon;
 
-  /// Subtítulo opcional para contexto adicional.
+  // Subtítulo opcional para contexto adicional.
   final String? subtitle;
 
   const AppMetricCard({

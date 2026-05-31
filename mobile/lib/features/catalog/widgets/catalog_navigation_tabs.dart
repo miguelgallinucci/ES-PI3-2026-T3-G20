@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 // Widget responsável por alternar visualmente entre catálogo e balcão.
 //
 // Isola as abas principais da CatalogPage, mantendo a página responsável

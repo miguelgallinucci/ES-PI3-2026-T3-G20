@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
@@ -6,9 +7,7 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_input.dart';
 import '../../../shared/widgets/app_background.dart';
 
-// Desenvolvido por Alycia Santos Bond
 // Tela de recuperação de senha do aplicativo MesclaInvest
-
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
 
@@ -16,8 +15,8 @@ class ForgotPasswordPage extends StatefulWidget {
   State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-/// Estado da página de recuperação de senha.
-/// Gerencia o envio do email de redefinição e as mensagens de feedback.
+// Estado da página de recuperação de senha.
+// Gerencia o envio do email de redefinição e as mensagens de feedback.
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final AuthService _authService = AuthService();
   final TextEditingController _emailController = TextEditingController();
@@ -34,8 +33,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     super.dispose();
   }
 
-  /// Envia um email de recuperação de senha para o usuário.
-  /// Valida o email, envia a instrução via Firebase e exibe mensagem de sucesso ou erro.
+  // Envia um email de recuperação de senha para o usuário.
+  // Valida o email, envia a instrução via Firebase e exibe mensagem de sucesso ou erro.
+  // Dispara o fluxo de redefinição de senha utilizando o AuthService.
+  // Trata os retornos do Firebase Auth (ex: email inválido, excesso de requisições)
+  // e atualiza o estado da UI para exibir o alerta apropriado.
   Future<void> _sendPasswordResetEmail() async {
     final email = _emailController.text.trim();
 
@@ -79,7 +81,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     }
   }
 
-  /// Converte códigos de erro do Firebase em mensagens em português para o usuário.
+  // Converte códigos de erro do Firebase em mensagens em português para o usuário.
   String _getFirebaseErrorMessage(String code) {
     switch (code) {
       case 'invalid-email':

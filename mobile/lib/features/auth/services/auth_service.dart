@@ -1,9 +1,8 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-
-class DuplicateCpfException implements Exception {}
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -18,6 +17,9 @@ class AuthService {
     return _auth.authStateChanges();
   }
 
+  // Realiza login do usuário via Firebase Auth.
+  // Retorna UserCredential em caso de sucesso ou lança FirebaseAuthException
+  // que deve ser tratada e convertida na UI.
   Future<UserCredential> login({
     required String email,
     required String password,
@@ -30,6 +32,11 @@ class AuthService {
     );
   }
 
+  // Fluxo de criação de conta orquestrado entre Auth e Cloud Functions:
+  // 1. Cria usuário no Firebase Auth.
+  // 2. Obtém idToken atualizado (necessário como fallback para a Cloud Function).
+  // 3. Chama a função `createUserProfile` via httpsCallable para criar o documento do usuário.
+  // 4. Executa rollback (delete) no Auth caso a Cloud Function falhe, garantindo consistência.
   Future<UserCredential> register({
     required String fullName,
     required String email,
@@ -43,7 +50,7 @@ class AuthService {
     final cleanCpf = cpf.trim();
     final cleanPhone = phone.trim();
 
-    /// desenvolvido por Miguel Gallinucci - CPF duplicado agora e validado no backend para evitar leitura aberta de users.
+    // desenvolvido por Miguel Gallinucci - CPF duplicado agora e validado no backend para evitar leitura aberta de users.
 
     // 1. Cria o usuário no Firebase Auth
     final credential = await _auth.createUserWithEmailAndPassword(
@@ -66,7 +73,7 @@ class AuthService {
     try {
       final callable = _functions.httpsCallable('createUserProfile');
 
-      /// desenvolvido por Miguel Gallinucci - envia a escolha do 2FA junto com os dados do cadastro.
+      // desenvolvido por Miguel Gallinucci - envia a escolha do 2FA junto com os dados do cadastro.
       await callable.call({
         'fullName': cleanFullName,
         'cpf': cleanCpf,
@@ -92,6 +99,8 @@ class AuthService {
     return credential;
   }
 
+  // Solicita o envio de e-mail de redefinição de senha.
+  // Utiliza a integração nativa do Firebase Auth, sem necessidade de backend customizado.
   Future<void> sendPasswordResetEmail({required String email}) async {
     final cleanEmail = email.trim();
 

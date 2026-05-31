@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 // Widget responsável por exibir a busca e os filtros do catálogo.
 //
 // Isola a interface de pesquisa, setor e estágio, mantendo a CatalogPage

@@ -1,19 +1,20 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
-/// Widget global para cabeçalhos de página padronizados.
-/// Centraliza o estilo de títulos, subtítulos e ações de navegação (voltar/trailing).
+// Widget global para cabeçalhos de página padronizados.
+// Centraliza o estilo de títulos, subtítulos e ações de navegação (voltar/trailing).
 class PageHeader extends StatelessWidget {
-  /// O título principal da página.
+  // O título principal da página.
   final String title;
 
-  /// Subtítulo opcional para fornecer mais contexto à página.
+  // Subtítulo opcional para fornecer mais contexto à página.
   final String? subtitle;
 
-  /// Callback opcional para o botão de voltar. Se nulo, o botão não é exibido.
+  // Callback opcional para o botão de voltar. Se nulo, o botão não é exibido.
   final VoidCallback? onBack;
 
-  /// Widget opcional para ser exibido à direita do título (ex: ícone de perfil ou configurações).
+  // Widget opcional para ser exibido à direita do título (ex: ícone de perfil ou configurações).
   final Widget? trailing;
 
   const PageHeader({

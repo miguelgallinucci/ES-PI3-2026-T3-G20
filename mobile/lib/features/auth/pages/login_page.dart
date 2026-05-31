@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -11,9 +12,7 @@ import '../../catalog/pages/catalog_page.dart';
 import '../../../shared/widgets/app_background.dart';
 import '../widgets/login_decorative_chart.dart';
 
-// Desenvolvido por Alycia Santos Bond
 // Tela de login do aplicativo MesclaInvest
-
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
@@ -21,8 +20,8 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-/// Estado da página de login.
-/// Gerencia os controladores de entrada, estado de carregamento e mensagens de erro.
+// Estado da página de login.
+// Gerencia os controladores de entrada, estado de carregamento e mensagens de erro.
 class _LoginPageState extends State<LoginPage> {
   final AuthService _authService = AuthService();
 
@@ -46,9 +45,15 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  /// Realiza o login do usuário com email e senha.
-  /// Valida os campos, faz autenticação via Firebase e navega para a página de catálogo.
-  /// Trata erros de autenticação e exibe mensagens apropriadas.
+  // Realiza o login do usuário com email e senha.
+  // Valida os campos, faz autenticação via Firebase e navega para a página de catálogo.
+  // Trata erros de autenticação e exibe mensagens apropriadas.
+  // Fluxo de login:
+  // 1. Valida se os campos não estão vazios
+  // 2. Autentica via Firebase Auth (`AuthService.login`)
+  // 3. Verifica se MFA (2FA) está ativo no Firestore
+  // 4. Se ativo: dispara o código para o e-mail e aguarda verificação
+  // 5. Se inativo ou validado: navega para CatalogPage
   Future<void> _login() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -79,6 +84,8 @@ class _LoginPageState extends State<LoginPage> {
         await _startTwoFactorVerification();
         return;
       }
+
+      if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
@@ -348,7 +355,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  /// Converte códigos de erro do Firebase em mensagens em português para o usuário.
+  // Converte códigos de erro do Firebase em mensagens em português para o usuário.
   String _getFirebaseErrorMessage(String code) {
     switch (code) {
       case 'invalid-email':

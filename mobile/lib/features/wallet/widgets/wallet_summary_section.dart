@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 // Widget responsável por exibir o resumo financeiro da carteira.
 //
 // Centraliza saldo disponível, total investido, startups e ação de aporte,
@@ -94,8 +95,8 @@ class WalletSummarySection extends StatelessWidget {
   }
 }
 
-/// Widget auxiliar que exibe resumo da carteira com label e valor.
-/// Mantido privado dentro da seção de resumo por ter design específico (sem ícone e com destaque).
+// Widget auxiliar que exibe resumo da carteira com label e valor.
+// Mantido privado dentro da seção de resumo por ter design específico (sem ícone e com destaque).
 class _SummaryCard extends StatelessWidget {
   final String label;
   final String value;

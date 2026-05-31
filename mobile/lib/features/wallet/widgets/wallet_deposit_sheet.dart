@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 // Widget responsável por exibir o formulário de adição de saldo.
 //
 // Isola o BottomSheet da carteira e controla a interface de valores rápidos,
@@ -158,7 +159,7 @@ class _WalletDepositSheetState extends State<WalletDepositSheet> {
   }
 }
 
-/// Botão auxiliar para rápida seleção de valores de saldo.
+// Botão auxiliar para rápida seleção de valores de saldo.
 class _QuickAmountButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
