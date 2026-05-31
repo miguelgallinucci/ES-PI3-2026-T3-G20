@@ -46,6 +46,12 @@ service cloud.firestore {
       }
     }
 
+    match /questions/{questionId} {
+      /// desenvolvido por Miguel Gallinucci - libera leitura das perguntas publicas usadas na tela da startup.
+      allow read: if signedIn() && resource.data.isPublic == true;
+      allow write: if false;
+    }
+
     match /transactions/{transactionId} {
       allow read: if signedIn() && resource.data.userId == request.auth.uid;
       allow write: if false;
