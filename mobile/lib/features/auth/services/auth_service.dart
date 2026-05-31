@@ -42,12 +42,7 @@ class AuthService {
     final cleanCpf = cpf.trim();
     final cleanPhone = phone.trim();
 
-    /// desenvolvido por Miguel Gallinucci - normaliza o CPF para comparar sem mascara.
-    final normalizedCpf = cleanCpf.replaceAll(RegExp(r'\D'), '');
-
-    if (await _isCpfAlreadyRegistered(cleanCpf, normalizedCpf)) {
-      throw DuplicateCpfException();
-    }
+    /// desenvolvido por Miguel Gallinucci - CPF duplicado agora e validado no backend para evitar leitura aberta de users.
 
     // 1. Cria o usuário no Firebase Auth
     final credential = await _auth.createUserWithEmailAndPassword(
@@ -93,50 +88,10 @@ class AuthService {
     return credential;
   }
 
-  /// desenvolvido por Miguel Gallinucci - verifica se ja existe uma conta com o CPF informado.
-  Future<bool> _isCpfAlreadyRegistered(
-    String cleanCpf,
-    String normalizedCpf,
-  ) async {
-    final cpfValues = <String>{cleanCpf, normalizedCpf}
-        .where((value) => value.trim().isNotEmpty)
-        .toList();
-
-    final checks = <Future<QuerySnapshot<Map<String, dynamic>>>>[];
-
-    if (normalizedCpf.isNotEmpty) {
-      checks.add(
-        _firestore
-            .collection('users')
-            .where('cpfNormalized', isEqualTo: normalizedCpf)
-            .limit(1)
-            .get(),
-      );
-    }
-
-    if (cpfValues.isNotEmpty) {
-      checks.add(
-        _firestore
-            .collection('users')
-            .where('cpf', whereIn: cpfValues)
-            .limit(1)
-            .get(),
-      );
-    }
-
-    final snapshots = await Future.wait(checks);
-
-    return snapshots.any((snapshot) => snapshot.docs.isNotEmpty);
-  }
-
-  Future<void> sendPasswordResetEmail({
-    required String email,
-  }) async {
+  Future<void> sendPasswordResetEmail({required String email}) async {
     final cleanEmail = email.trim();
 
-    await _auth.sendPasswordResetEmail(
-      email: cleanEmail,
-    );
+    await _auth.sendPasswordResetEmail(email: cleanEmail);
   }
 
   Future<Map<String, dynamic>?> getCurrentUserData() async {
@@ -163,25 +118,18 @@ class AuthService {
       return;
     }
 
-    await _firestore.collection('users').doc(user.uid).set(
-      {
-        'mfaEnabled': enabled,
-        'mfaUpdatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    await _firestore.collection('users').doc(user.uid).set({
+      'mfaEnabled': enabled,
+      'mfaUpdatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
-  Future<void> sendEmailMfaCode({
-    required String email,
-  }) async {
+  Future<void> sendEmailMfaCode({required String email}) async {
     final cleanEmail = email.trim();
 
     final callable = _functions.httpsCallable('sendEmailMfaCode');
 
-    await callable.call({
-      'email': cleanEmail,
-    });
+    await callable.call({'email': cleanEmail});
   }
 
   Future<bool> verifyEmailMfaCode({

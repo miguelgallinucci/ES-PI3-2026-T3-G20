@@ -1,0 +1,63 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    /// desenvolvido por Miguel Gallinucci - regras para liberar dados somente ao usuario autenticado correto.
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow update: if isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['mfaEnabled', 'mfaUpdatedAt']);
+      allow create, delete: if false;
+
+      match /positions/{positionId} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+
+    match /startups/{startupId} {
+      allow read: if signedIn();
+      allow write: if false;
+
+      match /priceHistory/{historyId} {
+        allow read: if signedIn();
+        allow write: if false;
+      }
+
+      match /questions/{questionId} {
+        allow read: if signedIn();
+        allow write: if false;
+      }
+
+      match /privateQuestions/{questionId} {
+        allow read: if signedIn() && resource.data.userId == request.auth.uid;
+        allow create: if signedIn()
+          && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /marketOffers/{offerId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
