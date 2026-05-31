@@ -36,6 +36,7 @@ class AuthService {
     required String cpf,
     required String phone,
     required String password,
+    bool mfaEnabled = false,
   }) async {
     final cleanEmail = email.trim();
     final cleanFullName = fullName.trim();
@@ -64,10 +65,13 @@ class AuthService {
     // 3. Chama a Cloud Function createUserProfile para criar users/{uid}
     try {
       final callable = _functions.httpsCallable('createUserProfile');
+
+      /// desenvolvido por Miguel Gallinucci - envia a escolha do 2FA junto com os dados do cadastro.
       await callable.call({
         'fullName': cleanFullName,
         'cpf': cleanCpf,
         'phone': cleanPhone,
+        'mfaEnabled': mfaEnabled,
         'idToken': idToken,
       });
       debugPrint('Perfil criado via Cloud Function para uid=${user.uid}');

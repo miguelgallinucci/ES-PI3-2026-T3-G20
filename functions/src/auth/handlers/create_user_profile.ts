@@ -53,6 +53,8 @@ export const createUserProfile = functions.https.onCall(async (data, context) =>
 
   // Validação dos dados de entrada
   const { fullName, cpf, phone } = data;
+  /// desenvolvido por Miguel Gallinucci - recebe do app se o usuario quer iniciar com 2FA ativo.
+  const mfaEnabled = data.mfaEnabled === true;
 
   if (!fullName || typeof fullName !== 'string' || fullName.trim() === '') {
     throw new functions.https.HttpsError(
@@ -124,7 +126,7 @@ export const createUserProfile = functions.https.onCall(async (data, context) =>
         cpfNormalized: normalizedCpf,
         phone: phone.trim(),
         role: 'investidor',
-        mfaEnabled: false,
+        mfaEnabled,
         saldoFicticio: 0,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
@@ -137,6 +139,7 @@ export const createUserProfile = functions.https.onCall(async (data, context) =>
         cpf: cleanCpf,
         cpfNormalized: normalizedCpf,
         phone: phone.trim(),
+        mfaEnabled,
       });
       console.log(`Perfil ATUALIZADO no Firestore para uid=${uid}`);
     }

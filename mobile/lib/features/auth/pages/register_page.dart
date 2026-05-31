@@ -37,6 +37,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Estado de carregamento e mensagem de erro
   bool _isLoading = false;
+
+  /// desenvolvido por Miguel Gallinucci - guarda se a conta deve nascer com 2FA ativo.
+  bool _enableMfa = false;
   String? _errorMessage;
 
   @override
@@ -100,20 +103,20 @@ class _RegisterPageState extends State<RegisterPage> {
         cpf: cpf,
         phone: phone,
         password: password,
+        mfaEnabled: _enableMfa,
       );
 
       if (!mounted) return;
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => const CatalogPage(),
-        ),
+        MaterialPageRoute(builder: (_) => const CatalogPage()),
       );
     } on FirebaseAuthException catch (error) {
       setState(() {
         _errorMessage = _getFirebaseErrorMessage(error.code);
       });
+
       /// desenvolvido por Miguel Gallinucci - exibe mensagem quando o CPF ja esta cadastrado.
     } on DuplicateCpfException {
       setState(() {
@@ -299,6 +302,43 @@ class _RegisterPageState extends State<RegisterPage> {
                             obscureText: true,
                             controller: _confirmPasswordController,
                           ),
+                          const SizedBox(height: 18),
+                          OutlinedButton.icon(
+                            onPressed: _isLoading
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _enableMfa = !_enableMfa;
+                                    });
+                                  },
+                            icon: Icon(
+                              _enableMfa
+                                  ? Icons.check_circle_rounded
+                                  : Icons.verified_user_outlined,
+                            ),
+                            label: Text(
+                              _enableMfa
+                                  ? '2FA ativado no cadastro'
+                                  : 'Ativar 2FA ao criar conta',
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: _enableMfa
+                                  ? AppColors.primaryLight
+                                  : AppColors.textSecondary,
+                              side: BorderSide(
+                                color: _enableMfa
+                                    ? AppColors.primaryLight
+                                    : AppColors.border,
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 14,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                            ),
+                          ),
 
                           // Mostra mensagem de erro quando a validação ou cadastro falham
                           if (_errorMessage != null) ...[
@@ -326,7 +366,9 @@ class _RegisterPageState extends State<RegisterPage> {
                           const SizedBox(height: 24),
 
                           AppButton(
-                            text: _isLoading ? 'Criando conta...' : 'Criar conta',
+                            text: _isLoading
+                                ? 'Criando conta...'
+                                : 'Criar conta',
                             onPressed: _isLoading ? () {} : _register,
                           ),
 
