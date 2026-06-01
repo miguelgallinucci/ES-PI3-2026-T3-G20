@@ -94,12 +94,13 @@ Para validação técnica da qualidade do código:
 - **Gerenciamento da pasta functions/lib**: Esta pasta é gerada automaticamente durante o processo de build. Alterações devem ser feitas exclusivamente nos arquivos da pasta `src`.
 - **Integridade de Dados**: Os esquemas de dados no Firestore são padronizados para garantir a compatibilidade entre a aplicação móvel e o backend.
 
-## Próximas evoluções
-- Expansão das regras operacionais do balcão de negociações.
-- Evolução contínua das métricas analíticas do dashboard.
-- Refinamento progressivo das regras de segurança e acesso do banco de dados.
-- Automação do fluxo de publicação das Cloud Functions.
-- Implementação de baterias de testes integrados para o fluxo transacional completo.
+- **Segurança Avançada de MFA:** Implementar bloqueio por *Custom Claims* via API REST (atualmente o 2FA via e-mail possui bloqueio exclusivamente visual no client-side).
+- **Dados Reais nos Gráficos de Startup:** Substituir o uso de dados de variação simulados (Fake Data / *fallback*) por dados reativos fidedignos em startups recém-lançadas.
+- **Gateway de Pagamento Real:** Substituição do fluxo atual de *aporte simulado* por integração real com PIX ou Stripe.
+- **KYC e Compliance:** Integração com APIs governamentais para validação de veracidade do CPF no momento do registro.
+- **Painel Administrativo Emissor:** Desenvolvimento de uma plataforma web focada nas Startups captadoras (atualmente o MVP foca 100% na visão do Investidor).
+- **Refinamento do Balcão:** Calibrar a fórmula de variação de tokens do mercado primário para mitigar oscilações muito bruscas frente ao mercado P2P.
+- **Infraestrutura e Qualidade:** Implementação de testes integrados e automação (CI/CD) para as Cloud Functions.
 
 ## Integrantes
 - Alycia Santos Bond
