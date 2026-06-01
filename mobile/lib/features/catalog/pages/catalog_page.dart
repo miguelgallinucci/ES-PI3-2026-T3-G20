@@ -1,4 +1,7 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:flutter/material.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/services.dart';
 import '../../../core/theme/app_colors.dart';
 import '../services/catalog_service.dart';
 import '../../startup/models/startup_model.dart';
@@ -29,76 +32,14 @@ class _CatalogPageState extends State<CatalogPage> {
   bool showMarket = false;
   bool isBuySelected = true;
   bool showGuidance = true;
+  String buyOfferSort = 'Menor preco';
 
   final TextEditingController _searchController = TextEditingController();
 
-  String selectedSector = 'Todos os setores';
-  String selectedStage = 'Todos os estágios';
+  String selectedSector = 'Setores';
+  String selectedStage = 'Estágios';
 
   final CatalogService _startupService = CatalogService();
-
-  final List<AvailableOffer> availableOffers = const [
-    AvailableOffer(
-      startup: 'VisionAI Health',
-      sector: 'Saúde e IA',
-      stage: 'Em expansão',
-      quantity: 42,
-      unitPrice: 12.50,
-      variation: '+6,2%',
-    ),
-    AvailableOffer(
-      startup: 'GreenVolt Hub',
-      sector: 'Energia limpa',
-      stage: 'Em operação',
-      quantity: 80,
-      unitPrice: 9.80,
-      variation: '+3,4%',
-    ),
-    AvailableOffer(
-      startup: 'AgroLink Data',
-      sector: 'Agrotech',
-      stage: 'Nova',
-      quantity: 35,
-      unitPrice: 7.10,
-      variation: '-1,2%',
-    ),
-  ];
-
-  final List<UserTokenPosition> userPositions = const [
-    UserTokenPosition(
-      startup: 'VisionAI Health',
-      sector: 'Saúde e IA',
-      tokensOwned: 20,
-      currentPrice: 12.50,
-      variation: '+6,2%',
-    ),
-    UserTokenPosition(
-      startup: 'GreenVolt Hub',
-      sector: 'Energia limpa',
-      tokensOwned: 14,
-      currentPrice: 9.80,
-      variation: '+3,4%',
-    ),
-    UserTokenPosition(
-      startup: 'AgroLink Data',
-      sector: 'Agrotech',
-      tokensOwned: 8,
-      currentPrice: 7.10,
-      variation: '-1,2%',
-    ),
-  ];
-
-  int get totalTokensInWallet {
-    return userPositions.fold(0, (sum, position) => sum + position.tokensOwned);
-  }
-
-  double get estimatedWalletValue {
-    return userPositions.fold(
-      0,
-          (sum, position) => sum + (position.tokensOwned * position.currentPrice),
-    );
-  }
-
 
   @override
   void dispose() {
@@ -195,23 +136,7 @@ class _CatalogPageState extends State<CatalogPage> {
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 250),
                       child: showMarket
-                          ? CatalogMarketSection(
-                        isBuySelected: isBuySelected,
-                        onModeChanged: (value) {
-                          setState(() {
-                            isBuySelected = value;
-                          });
-                        },
-                        availableOffers: availableOffers,
-                        userPositions: userPositions,
-                        totalTokensInWallet: totalTokensInWallet,
-                        estimatedWalletValue: estimatedWalletValue,
-                        formatCurrency: AppFormatters.currency,
-                        onBuyOffer: (offer) =>
-                            _showBuyOfferDialog(context, offer),
-                        onSellPosition: (position) =>
-                            _openSellOfferSheet(context, position),
-                      )
+                          ? _buildMarketContent()
                           : _buildStartupCatalogContent(),
                     ),
                     const SizedBox(height: 20),
@@ -225,35 +150,122 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
+  Widget _buildMarketContent() {
+    return StreamBuilder<List<AvailableOffer>>(
+      stream: _startupService.watchOpenOffers(),
+      builder: (context, offersSnapshot) {
+        return StreamBuilder<List<AvailableOffer>>(
+          stream: _startupService.watchCurrentUserOpenOffers(),
+          builder: (context, userOffersSnapshot) {
+            return StreamBuilder<List<UserTokenPosition>>(
+              stream: _startupService.watchCurrentUserPositions(),
+              builder: (context, positionsSnapshot) {
+                return StreamBuilder<double>(
+                  stream: _startupService.watchCurrentUserBalance(),
+                  builder: (context, balanceSnapshot) {
+                    if (offersSnapshot.connectionState ==
+                            ConnectionState.waiting ||
+                        userOffersSnapshot.connectionState ==
+                            ConnectionState.waiting ||
+                        positionsSnapshot.connectionState ==
+                            ConnectionState.waiting ||
+                        balanceSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.only(top: 30),
+                        child: AppLoading(message: 'Carregando balcao...'),
+                      );
+                    }
+
+                    if (offersSnapshot.hasError ||
+                        userOffersSnapshot.hasError ||
+                        positionsSnapshot.hasError ||
+                        balanceSnapshot.hasError) {
+                      return const AppErrorState(
+                        message: 'Nao foi possivel carregar o balcao.',
+                      );
+                    }
+
+                    final offers = offersSnapshot.data ?? [];
+                    final userOffers = userOffersSnapshot.data ?? [];
+                    final positions = positionsSnapshot.data ?? [];
+                    final totalTokensInWallet = positions.fold<int>(
+                      0,
+                      (sum, position) => sum + position.tokensOwned,
+                    );
+                    return CatalogMarketSection(
+                      isBuySelected: isBuySelected,
+                      onModeChanged: (value) {
+                        setState(() {
+                          isBuySelected = value;
+                        });
+                      },
+                      availableOffers: offers,
+                      userOffers: userOffers,
+                      userPositions: positions,
+                      availableBalance: balanceSnapshot.data ?? 0,
+                      totalTokensInWallet: totalTokensInWallet,
+                      buyOfferSort: buyOfferSort,
+                      onBuyOfferSortChanged: (value) {
+                        setState(() {
+                          buyOfferSort = value;
+                        });
+                      },
+                      formatCurrency: AppFormatters.currency,
+                      onBuyOffer: (offer) =>
+                          _showBuyQuantityDialog(context, offer),
+                      onCancelOffer: (offer) =>
+                          _showCancelOfferDialog(context, offer),
+                      onSellPosition: (position) =>
+                          _openSellOfferSheet(context, position),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildStartupCatalogContent() {
     return StreamBuilder<List<StartupModel>>(
       stream: _startupService.watchStartups(),
       builder: (context, snapshot) {
         final startups = snapshot.data ?? [];
 
+        final dynamicSectors = startups
+            .expand((s) => s.categories)
+            .map((c) => c.trim())
+            .where((c) => c.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort((a, b) => a.compareTo(b));
+
         final sectorOptions = [
-          'Todos os setores',
-          ...{
-            for (final startup in startups)
-              for (final category in startup.categories)
-                if (category.trim().isNotEmpty) category.trim(),
-          },
+          'Setores',
+          ...dynamicSectors,
         ];
 
+        final dynamicStages = startups
+            .map((s) => s.stage.trim())
+            .where((st) => st.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort((a, b) => a.compareTo(b));
+
         final stageOptions = [
-          'Todos os estágios',
-          ...{
-            for (final startup in startups)
-              if (startup.stage.trim().isNotEmpty) startup.stage.trim(),
-          },
+          'Estágios',
+          ...dynamicStages,
         ];
 
         if (!sectorOptions.contains(selectedSector)) {
-          selectedSector = 'Todos os setores';
+          selectedSector = 'Setores';
         }
 
         if (!stageOptions.contains(selectedStage)) {
-          selectedStage = 'Todos os estágios';
+          selectedStage = 'Estágios';
         }
 
         final searchText = _searchController.text.trim().toLowerCase();
@@ -276,12 +288,12 @@ class _CatalogPageState extends State<CatalogPage> {
                   description.contains(searchText) ||
                   categories.any((category) => category.contains(searchText));
 
-          final matchesSector =
-              selectedSector == 'Todos os setores' ||
-                  categories.contains(selectedSector.toLowerCase());
+          final matchesSector = selectedSector == 'Setores' ||
+              startup.categories.any((c) => c.trim().toLowerCase() == selectedSector.trim().toLowerCase()) ||
+              startup.sector.trim().toLowerCase() == selectedSector.trim().toLowerCase();
 
           final matchesStage =
-              selectedStage == 'Todos os estágios' ||
+              selectedStage == 'Estágios' ||
                   startup.stage.toLowerCase() == selectedStage.toLowerCase();
 
           return matchesSearch && matchesSector && matchesStage;
@@ -393,38 +405,145 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
+  void _showBuyQuantityDialog(BuildContext context, AvailableOffer offer) {
+    final quantityController =
+        TextEditingController(text: offer.quantity.toString());
 
-  void _showBuyOfferDialog(BuildContext context, AvailableOffer offer) {
-    final total = offer.quantity * offer.unitPrice;
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final quantity = int.tryParse(quantityController.text) ?? 0;
+          final total = quantity * offer.unitPrice;
+          final canBuy = quantity > 0 && quantity <= offer.quantity;
 
+          return AlertDialog(
+            backgroundColor: const Color(0xFF102235),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            title: const Text(
+              'Confirmar compra',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Escolha quantos tokens da ${offer.startup} deseja comprar.',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: quantityController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  onChanged: (_) => setDialogState(() {}),
+                  decoration: _inputDecoration('Maximo: ${offer.quantity}'),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Total: ${AppFormatters.currency(total)}',
+                  style: const TextStyle(
+                    color: AppColors.primaryLight,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  quantityController.dispose();
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  'Cancelar',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+              TextButton(
+                onPressed: canBuy
+                    ? () async {
+                        quantityController.dispose();
+                        Navigator.pop(context);
+                        await _buyMarketOfferQuantity(offer, quantity);
+                      }
+                    : null,
+                child: const Text(
+                  'Comprar',
+                  style: TextStyle(
+                    color: AppColors.primaryLight,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+
+
+  // desenvolvido por Miguel Gallinucci - compra quantidade parcial de uma oferta do balcao.
+  Future<void> _buyMarketOfferQuantity(
+    AvailableOffer offer,
+    int quantity,
+  ) async {
+    try {
+      await _startupService.buyMarketOfferQuantity(
+        offerId: offer.id,
+        quantity: quantity,
+      );
+
+      if (!mounted) return;
+
+      _showBuyQuantityResultDialog(offer, quantity);
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_friendlyFunctionError(error))),
+      );
+    }
+  }
+
+  void _showCancelOfferDialog(BuildContext context, AvailableOffer offer) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF102235),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text(
-          'Confirmar compra',
+          'Cancelar oferta',
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          'Você está comprando ${offer.quantity} tokens da ${offer.startup} por ${AppFormatters.currency(total)}.',
+          'Deseja cancelar sua oferta de ${offer.quantity} tokens da ${offer.startup}? Os tokens restantes voltarao para a carteira.',
           style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text(
-              'Cancelar',
+              'Voltar',
               style: TextStyle(color: AppColors.textSecondary),
             ),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              _showBuyResultDialog(offer);
+              await _cancelSellOffer(offer);
             },
             child: const Text(
-              'Comprar',
+              'Cancelar oferta',
               style: TextStyle(
                 color: AppColors.primaryLight,
                 fontWeight: FontWeight.w800,
@@ -436,18 +555,35 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
-  void _showBuyResultDialog(AvailableOffer offer) {
+  // desenvolvido por Miguel Gallinucci - cancela oferta propria e retorna tokens para carteira.
+  Future<void> _cancelSellOffer(AvailableOffer offer) async {
+    try {
+      await _startupService.cancelSellOffer(offerId: offer.id);
+
+      if (!mounted) return;
+
+      _showCancelResultDialog(offer);
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_friendlyFunctionError(error))),
+      );
+    }
+  }
+
+  void _showCancelResultDialog(AvailableOffer offer) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: const Color(0xFF102235),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text(
-          'Compra confirmada',
+          'Venda cancelada',
           style: TextStyle(color: Colors.white),
         ),
         content: Text(
-          'A compra simulada dos tokens da ${offer.startup} foi concluída com sucesso.',
+          '${offer.quantity} tokens da ${offer.startup} voltaram para sua carteira.',
           style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
         ),
         actions: [
@@ -463,6 +599,78 @@ class _CatalogPageState extends State<CatalogPage> {
     );
   }
 
+  String _friendlyFunctionError(Object error) {
+    if (error is FirebaseFunctionsException) {
+      final message = error.message ?? '';
+
+      if (error.code == 'not-found' && message == 'NOT_FOUND') {
+        return 'Funcao de cancelamento ainda nao foi publicada. Faca deploy das functions.';
+      }
+
+      if (message.contains('propria oferta')) {
+        return 'Voce nao pode comprar a propria oferta.';
+      }
+
+      if (message == 'saldo_insuficiente') {
+        return 'Saldo insuficiente para comprar esta oferta.';
+      }
+
+      if (message.contains('Quantidade indisponivel')) {
+        return 'Essa quantidade nao esta mais disponivel na oferta.';
+      }
+
+      if (message.contains('quantidade deve ser')) {
+        return 'Informe uma quantidade valida de tokens.';
+      }
+
+      if (message.contains('Oferta indisponivel')) {
+        return 'Essa oferta nao esta mais disponivel.';
+      }
+
+      if (message.contains('cancelar suas proprias ofertas')) {
+        return 'Voce so pode cancelar suas proprias ofertas.';
+      }
+
+      if (message.contains('indisponivel para cancelamento')) {
+        return 'Essa oferta nao esta mais disponivel para cancelamento.';
+      }
+
+      if (message.isNotEmpty) {
+        return message;
+      }
+    }
+
+    return 'Nao foi possivel concluir a operacao. Tente novamente.';
+  }
+
+  void _showBuyQuantityResultDialog(AvailableOffer offer, int quantity) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF102235),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text(
+          'Compra confirmada',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'A compra de $quantity tokens da ${offer.startup} foi concluida com sucesso.',
+          style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Fechar',
+              style: TextStyle(color: AppColors.primaryLight),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // desenvolvido por Miguel Gallinucci - abre o fluxo para publicar oferta de venda.
   void _openSellOfferSheet(BuildContext context, UserTokenPosition position) {
     showModalBottomSheet(
       context: context,
@@ -478,13 +686,29 @@ class _CatalogPageState extends State<CatalogPage> {
             required int quantity,
             required double price,
             required double total,
-          }) {
-            _showSellResultDialog(
-              position: position,
-              quantity: quantity,
-              price: price,
-              total: total,
-            );
+          }) async {
+            try {
+              await _startupService.createSellOffer(
+                startupId: position.startupId,
+                quantity: quantity,
+                unitPrice: price,
+              );
+
+              if (!mounted) return;
+
+              _showSellResultDialog(
+                position: position,
+                quantity: quantity,
+                price: price,
+                total: total,
+              );
+            } catch (error) {
+              if (!mounted) return;
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(_friendlyFunctionError(error))),
+              );
+            }
           },
         );
       },

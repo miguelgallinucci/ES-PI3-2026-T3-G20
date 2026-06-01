@@ -1,6 +1,7 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:flutter/services.dart';
 
-/// Formata a entrada de texto para o padrão de CPF (000.000.000-00).
+// Formata a entrada de texto para o padrão de CPF (000.000.000-00).
 class AppCpfInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
@@ -24,7 +25,7 @@ class AppCpfInputFormatter extends TextInputFormatter {
   }
 }
 
-/// Formata a entrada de texto para o padrão de telefone celular ((00) 00000-0000).
+// Formata a entrada de texto para o padrão de telefone celular ((00) 00000-0000).
 class AppPhoneInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(

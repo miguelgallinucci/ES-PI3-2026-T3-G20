@@ -58,8 +58,10 @@ class StartupModel {
         ? [fallbackSector]
         : [];
 
+    final String id = data['id']?.toString() ?? data['idStartup']?.toString() ?? '';
+
     return StartupModel(
-      id: data['id']?.toString() ?? data['idStartup']?.toString() ?? '',
+      id: id,
       name: data['name']?.toString() ?? '',
       sector: finalCategories.isNotEmpty ? finalCategories.first : '',
       categories: finalCategories,
@@ -75,7 +77,7 @@ class StartupModel {
       mentorsBoard: data['mentorsBoard']?.toString() ?? '',
       partners: data['partners']?.toString() ?? '',
       businessPlanUrl: data['businessPlanUrl']?.toString() ?? '',
-      demoVideoUrl: data['demoVideoUrl']?.toString() ?? '',
+      demoVideoUrl: _resolveDemoVideoUrl(id, data['demoVideoUrl']),
       logoUrl: data['logoUrl']?.toString() ?? '',
       status: data['status']?.toString() ?? '',
       emailPrivado: data['emailPrivado']?.toString() ?? '',
@@ -96,6 +98,23 @@ class StartupModel {
     }
 
     return null;
+  }
+
+  /// desenvolvido por Miguel Gallinucci - associa os videos locais das startups enviadas para a demonstracao.
+  static String _resolveDemoVideoUrl(String startupId, dynamic firebaseValue) {
+    final String localAsset = switch (startupId.toLowerCase()) {
+      'medlink' => 'assets/videos/medlink.mp4',
+      'edublocks' => 'assets/videos/edublocks.mp4',
+      'repmatch' => 'assets/videos/repmatch.mp4',
+      'carbonflow' => 'assets/videos/carbonflow.mp4',
+      _ => '',
+    };
+
+    if (localAsset.isNotEmpty) {
+      return localAsset;
+    }
+
+    return firebaseValue?.toString() ?? '';
   }
 
   String get displaySector {

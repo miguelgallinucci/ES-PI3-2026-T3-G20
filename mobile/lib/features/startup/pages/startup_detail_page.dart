@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_colors.dart';
 import '../services/startup_questions_service.dart';
 import '../models/startup_model.dart';
@@ -122,6 +123,129 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
   void dispose() {
     _questionController.dispose();
     super.dispose();
+  }
+
+  /// desenvolvido por Miguel Gallinucci - le o historico de precos salvo na startup.
+  Stream<List<_TokenPricePoint>> _watchTokenPriceHistory() {
+    if (widget.startup.id.trim().isEmpty) {
+      return Stream.value(const []);
+    }
+
+    return FirebaseFirestore.instance
+        .collection('startups')
+        .doc(widget.startup.id)
+        .collection('priceHistory')
+        .orderBy('createdAt')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => _TokenPricePoint.fromMap(doc.data()))
+          .where((point) => point.price > 0)
+          .toList();
+    });
+  }
+
+  /// desenvolvido por Miguel Gallinucci - transforma o historico real no grafico do token.
+  _TokenChartData _buildTokenChartData(List<_TokenPricePoint> history) {
+    final fallbackValues = _selectedChartValues;
+    final fallbackLabels = _selectedChartLabels;
+
+    if (history.isEmpty) {
+      return _TokenChartData(
+        values: fallbackValues,
+        labels: fallbackLabels,
+        subtitle: _selectedChartSubtitle,
+      );
+    }
+
+    final filteredHistory = _filterHistoryBySelectedPeriod(history);
+    final visibleHistory = filteredHistory.isEmpty ? history : filteredHistory;
+    final values = <double>[];
+    final labels = <String>[];
+    final firstPoint = visibleHistory.first;
+
+    if (firstPoint.previousPrice != null && firstPoint.previousPrice! > 0) {
+      values.add(firstPoint.previousPrice!);
+      labels.add(_formatChartLabel(firstPoint.createdAt, isInitialPoint: true));
+    }
+
+    for (final point in visibleHistory) {
+      values.add(point.price);
+      labels.add(_formatChartLabel(point.createdAt));
+    }
+
+    if (values.length == 1) {
+      final currentPrice = widget.startup.tokenPrice?.toDouble() ?? values.first;
+      values.insert(0, currentPrice);
+      labels.insert(0, 'Inicio');
+    }
+
+    return _TokenChartData(
+      values: values,
+      labels: labels,
+      subtitle: _selectedRealChartSubtitle,
+    );
+  }
+
+  List<_TokenPricePoint> _filterHistoryBySelectedPeriod(
+    List<_TokenPricePoint> history,
+  ) {
+    final now = DateTime.now();
+    final cutoff = now.subtract(_selectedPeriodDuration);
+
+    return history.where((point) {
+      final createdAt = point.createdAt;
+      if (createdAt == null) return true;
+
+      return createdAt.isAfter(cutoff) || createdAt.isAtSameMomentAs(cutoff);
+    }).toList();
+  }
+
+  Duration get _selectedPeriodDuration {
+    switch (_selectedPeriod) {
+      case ChartPeriod.day:
+        return const Duration(hours: 24);
+      case ChartPeriod.week:
+        return const Duration(days: 7);
+      case ChartPeriod.month:
+        return const Duration(days: 30);
+      case ChartPeriod.sixMonths:
+        return const Duration(days: 183);
+      case ChartPeriod.year:
+        return const Duration(days: 365);
+    }
+  }
+
+  String get _selectedRealChartSubtitle {
+    switch (_selectedPeriod) {
+      case ChartPeriod.day:
+        return 'Historico real das ultimas 24h';
+      case ChartPeriod.week:
+        return 'Historico real dos ultimos 7 dias';
+      case ChartPeriod.month:
+        return 'Historico real dos ultimos 30 dias';
+      case ChartPeriod.sixMonths:
+        return 'Historico real dos ultimos 6 meses';
+      case ChartPeriod.year:
+        return 'Historico real do ultimo ano';
+    }
+  }
+
+  String _formatChartLabel(DateTime? date, {bool isInitialPoint = false}) {
+    if (date == null) {
+      return isInitialPoint ? 'Inicio' : 'Agora';
+    }
+
+    switch (_selectedPeriod) {
+      case ChartPeriod.day:
+        return '${date.hour.toString().padLeft(2, '0')}h';
+      case ChartPeriod.week:
+      case ChartPeriod.month:
+        return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
+      case ChartPeriod.sixMonths:
+      case ChartPeriod.year:
+        return '${date.month.toString().padLeft(2, '0')}/${date.year.toString().substring(2)}';
+    }
   }
 
   List<double> get _selectedChartValues {
@@ -286,19 +410,19 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
   String get _selectedChartSubtitle {
     switch (_selectedPeriod) {
       case ChartPeriod.day:
-        return 'Variação simulada ao longo do dia';
+        return 'Variação estimada ao longo do dia';
 
       case ChartPeriod.week:
-        return 'Variação simulada da semana';
+        return 'Variação estimada da semana';
 
       case ChartPeriod.month:
-        return 'Variação simulada do mês';
+        return 'Variação estimada do mês';
 
       case ChartPeriod.sixMonths:
-        return 'Variação simulada dos últimos 6 meses';
+        return 'Variação estimada dos últimos 6 meses';
 
       case ChartPeriod.year:
-        return 'Variação simulada do ano';
+        return 'Variação estimada do ano';
     }
   }
 
@@ -342,9 +466,21 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
   }
 
   void _goToInvestmentPage(double currentPrice) {
-    final tokenPrice = widget.startup.tokenPriceText != '-'
-        ? widget.startup.tokenPriceText
-        : 'R\$ ${currentPrice.toStringAsFixed(2).replaceAll('.', ',')}';
+    final availableTokens = widget.startup.availableTokens?.toInt() ?? 0;
+
+    if (availableTokens <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Esta startup nao possui tokens disponiveis.'),
+          backgroundColor: Color(0xFF102235),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final tokenPrice =
+        'R\$ ${currentPrice.toStringAsFixed(2).replaceAll('.', ',')}';
 
     Navigator.push(
       context,
@@ -360,49 +496,61 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    final chartValues = _selectedChartValues;
-    final chartLabels = _selectedChartLabels;
-
-    final currentPrice = chartValues.last;
-    final firstPrice = chartValues.first;
-    final variation = ((currentPrice - firstPrice) / firstPrice) * 100;
-    final isPositive = variation >= 0;
-
     return Scaffold(
       bottomNavigationBar: SafeArea(
         top: false,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF04111D).withValues(alpha: 0.96),
-            border: Border(
-              top: BorderSide(
-                color: AppColors.border,
-              ),
-            ),
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton.icon(
-              onPressed: () => _goToInvestmentPage(currentPrice),
-              icon: const Icon(Icons.rocket_launch_rounded),
-              label: const Text(
-                'Investir nesta startup',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
+        child: StreamBuilder<List<_TokenPricePoint>>(
+          stream: _watchTokenPriceHistory(),
+          builder: (context, snapshot) {
+            final chartData = _buildTokenChartData(snapshot.data ?? const []);
+            final currentPrice = chartData.values.last;
+            final availableTokens = widget.startup.availableTokens?.toInt() ?? 0;
+            final hasAvailableTokens = availableTokens > 0;
+
+            return Container(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF04111D).withValues(alpha: 0.96),
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.border,
+                  ),
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+              child: SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton.icon(
+                  onPressed: hasAvailableTokens
+                      ? () => _goToInvestmentPage(currentPrice)
+                      : null,
+                  icon: Icon(
+                    hasAvailableTokens
+                        ? Icons.rocket_launch_rounded
+                        : Icons.block_rounded,
+                  ),
+                  label: Text(
+                    hasAvailableTokens
+                        ? 'Investir nesta startup'
+                        : 'Tokens esgotados',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: Colors.white.withValues(alpha: 0.08),
+                    disabledForegroundColor: AppColors.textSecondary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
       body: Container(
@@ -450,18 +598,32 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
 
                     const SizedBox(height: 18),
 
-                    StartupTokenOverviewCard(
-                      currentPrice: currentPrice,
-                      variation: variation,
-                      isPositive: isPositive,
-                      chartValues: chartValues,
-                      chartLabels: chartLabels,
-                      subtitle: _selectedChartSubtitle,
-                      selectedPeriod: _selectedPeriod,
-                      onPeriodChanged: (period) {
-                        setState(() {
-                          _selectedPeriod = period;
-                        });
+                    StreamBuilder<List<_TokenPricePoint>>(
+                      stream: _watchTokenPriceHistory(),
+                      builder: (context, snapshot) {
+                        final chartData =
+                            _buildTokenChartData(snapshot.data ?? const []);
+                        final currentPrice = chartData.values.last;
+                        final firstPrice = chartData.values.first;
+                        final variation = firstPrice > 0
+                            ? ((currentPrice - firstPrice) / firstPrice) * 100
+                            : 0.0;
+                        final isPositive = variation >= 0;
+
+                        return StartupTokenOverviewCard(
+                          currentPrice: currentPrice,
+                          variation: variation,
+                          isPositive: isPositive,
+                          chartValues: chartData.values,
+                          chartLabels: chartData.labels,
+                          subtitle: chartData.subtitle,
+                          selectedPeriod: _selectedPeriod,
+                          onPeriodChanged: (period) {
+                            setState(() {
+                              _selectedPeriod = period;
+                            });
+                          },
+                        );
                       },
                     ),
                     const SizedBox(height: 18),
@@ -532,47 +694,8 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                     AppSectionCard(
                       title: 'Vídeo demonstrativo',
                       subtitle: 'Pitch ou demonstração do produto',
-                      child: Container(
-                        height: 170,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.03),
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.play_circle_fill_rounded,
-                                color: AppColors.primaryLight,
-                                size: 52,
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                widget.startup.demoVideoUrl.trim().isNotEmpty
-                                    ? 'Vídeo demonstrativo disponível'
-                                    : 'Área reservada para vídeo',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.startup.demoVideoUrl.trim().isNotEmpty
-                                    ? widget.startup.demoVideoUrl
-                                    : 'Demonstração ou pitch da startup',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      child: StartupDemoVideo(
+                        videoUrl: widget.startup.demoVideoUrl,
                       ),
                     ),
                     const SizedBox(height: 96),
@@ -585,4 +708,555 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
       ),
     );
   }
+}
+
+class StartupDemoVideo extends StatefulWidget {
+  final String videoUrl;
+
+  const StartupDemoVideo({
+    super.key,
+    required this.videoUrl,
+  });
+
+  @override
+  State<StartupDemoVideo> createState() => _StartupDemoVideoState();
+}
+
+class _StartupDemoVideoState extends State<StartupDemoVideo> {
+  VideoPlayerController? _controller;
+  Future<void>? _initializeVideo;
+  double _volume = 1;
+
+  bool get _hasVideo => widget.videoUrl.trim().isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupVideo();
+  }
+
+  @override
+  void didUpdateWidget(covariant StartupDemoVideo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      _controller?.dispose();
+      _setupVideo();
+    }
+  }
+
+  void _setupVideo() {
+    final String source = widget.videoUrl.trim();
+
+    if (source.isEmpty) {
+      _controller = null;
+      _initializeVideo = null;
+      return;
+    }
+
+    final bool isAsset = source.startsWith('assets/');
+    _controller = isAsset
+        ? VideoPlayerController.asset(source)
+        : VideoPlayerController.networkUrl(Uri.parse(source));
+    _initializeVideo = _controller!.initialize().then((_) {
+      _controller!
+        ..setLooping(false)
+        ..setVolume(_volume);
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  void _togglePlayback() {
+    final VideoPlayerController? controller = _controller;
+
+    if (controller == null || !controller.value.isInitialized) return;
+
+    setState(() {
+      controller.value.isPlaying ? controller.pause() : controller.play();
+    });
+  }
+
+  void _seekRelative(Duration offset) {
+    final VideoPlayerController? controller = _controller;
+
+    if (controller == null || !controller.value.isInitialized) return;
+
+    final Duration duration = controller.value.duration;
+    final Duration current = controller.value.position;
+    final int targetMs = (current + offset).inMilliseconds.clamp(
+          0,
+          duration.inMilliseconds,
+        );
+
+    controller.seekTo(Duration(milliseconds: targetMs));
+  }
+
+  void _seekToProgress(double progress) {
+    final VideoPlayerController? controller = _controller;
+
+    if (controller == null || !controller.value.isInitialized) return;
+
+    final Duration duration = controller.value.duration;
+    controller.seekTo(
+      Duration(
+        milliseconds: (duration.inMilliseconds * progress).round(),
+      ),
+    );
+  }
+
+  void _setVolume(double volume) {
+    final VideoPlayerController? controller = _controller;
+
+    setState(() {
+      _volume = volume.clamp(0, 1);
+      controller?.setVolume(_volume);
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+
+    final int minutes = duration.inMinutes.remainder(60);
+    final int seconds = duration.inSeconds.remainder(60);
+
+    if (duration.inHours > 0) {
+      return '${duration.inHours}:${twoDigits(minutes)}:${twoDigits(seconds)}';
+    }
+
+    return '$minutes:${twoDigits(seconds)}';
+  }
+
+  Future<void> _openExpandedPlayer() async {
+    final VideoPlayerController? controller = _controller;
+
+    if (controller == null || !controller.value.isInitialized) return;
+
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.82),
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(18),
+          backgroundColor: AppColors.background,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Video demonstrativo',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Fechar',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildVideoPlayer(controller, expanded: true),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Widget _buildVideoPlayer(
+    VideoPlayerController controller, {
+    required bool expanded,
+  }) {
+    return _VideoFrame(
+      height: expanded ? 430 : 260,
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) {
+          final VideoPlayerValue value = controller.value;
+          final Duration duration = value.duration;
+          final Duration position = value.position;
+          final double progress = duration.inMilliseconds == 0
+              ? 0
+              : (position.inMilliseconds / duration.inMilliseconds).clamp(0, 1);
+
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: _togglePlayback,
+                  child: ColoredBox(
+                    color: Colors.black,
+                    child: Center(
+                      child: AspectRatio(
+                        aspectRatio: value.aspectRatio,
+                        child: VideoPlayer(controller),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton.filledTonal(
+                  tooltip: expanded ? 'Janela aberta' : 'Abrir em janela',
+                  onPressed: expanded ? null : _openExpandedPlayer,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black.withValues(alpha: 0.45),
+                    disabledBackgroundColor:
+                        Colors.black.withValues(alpha: 0.25),
+                  ),
+                  icon: const Icon(
+                    Icons.open_in_full_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+              if (!value.isPlaying)
+                Center(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: _togglePlayback,
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.primaryLight),
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow_rounded,
+                        color: AppColors.primaryLight,
+                        size: 44,
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                left: 10,
+                right: 10,
+                bottom: 10,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.58),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            _formatDuration(position),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Expanded(
+                            child: SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                trackHeight: 3,
+                                thumbShape: const RoundSliderThumbShape(
+                                  enabledThumbRadius: 6,
+                                ),
+                              ),
+                              child: Slider(
+                                value: progress.toDouble(),
+                                min: 0,
+                                max: 1,
+                                activeColor: AppColors.primaryLight,
+                                inactiveColor:
+                                    Colors.white.withValues(alpha: 0.2),
+                                onChanged: _seekToProgress,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            _formatDuration(duration),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          _VideoIconButton(
+                            tooltip: 'Voltar 10 segundos',
+                            icon: Icons.replay_10_rounded,
+                            onPressed: () =>
+                                _seekRelative(const Duration(seconds: -10)),
+                          ),
+                          _VideoIconButton(
+                            tooltip: value.isPlaying ? 'Pausar' : 'Reproduzir',
+                            icon: value.isPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            onPressed: _togglePlayback,
+                          ),
+                          _VideoIconButton(
+                            tooltip: 'Avancar 10 segundos',
+                            icon: Icons.forward_10_rounded,
+                            onPressed: () =>
+                                _seekRelative(const Duration(seconds: 10)),
+                          ),
+                          const Spacer(),
+                          _VideoIconButton(
+                            tooltip: _volume == 0 ? 'Ativar som' : 'Mutar',
+                            icon: _volume == 0
+                                ? Icons.volume_off_rounded
+                                : Icons.volume_up_rounded,
+                            onPressed: () => _setVolume(_volume == 0 ? 1 : 0),
+                          ),
+                          SizedBox(
+                            width: expanded ? 120 : 82,
+                            child: Slider(
+                              value: _volume,
+                              min: 0,
+                              max: 1,
+                              activeColor: AppColors.primaryLight,
+                              inactiveColor:
+                                  Colors.white.withValues(alpha: 0.2),
+                              onChanged: _setVolume,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_hasVideo) {
+      return const _VideoPlaceholder();
+    }
+
+    return FutureBuilder<void>(
+      future: _initializeVideo,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _VideoFrame(
+            child: Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primaryLight,
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError || _controller == null) {
+          return const _VideoPlaceholder(
+            title: 'Nao foi possivel carregar o video',
+            subtitle: 'Verifique o arquivo ou URL cadastrado.',
+          );
+        }
+
+        final VideoPlayerController controller = _controller!;
+
+        return _buildVideoPlayer(controller, expanded: false);
+      },
+    );
+  }
+}
+
+class _VideoFrame extends StatelessWidget {
+  final Widget child;
+  final double height;
+
+  const _VideoFrame({
+    required this.child,
+    this.height = 190,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        height: height,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _VideoIconButton extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  const _VideoIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      onPressed: onPressed,
+      icon: Icon(
+        icon,
+        color: Colors.white,
+        size: 24,
+      ),
+    );
+  }
+}
+
+class _VideoPlaceholder extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _VideoPlaceholder({
+    this.title = 'Area reservada para video',
+    this.subtitle = 'Demonstracao ou pitch da startup',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _VideoFrame(
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.play_circle_fill_rounded,
+              color: AppColors.primaryLight,
+              size: 52,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TokenPricePoint {
+  final double price;
+  final double? previousPrice;
+  final DateTime? createdAt;
+
+  const _TokenPricePoint({
+    required this.price,
+    this.previousPrice,
+    this.createdAt,
+  });
+
+  factory _TokenPricePoint.fromMap(Map<String, dynamic> data) {
+    return _TokenPricePoint(
+      price: _toDouble(data['price']),
+      previousPrice: _toNullableDouble(data['previousPrice']),
+      createdAt: _toDateTime(data['createdAt']),
+    );
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+    }
+
+    return 0;
+  }
+
+  static double? _toNullableDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.'));
+    }
+
+    return null;
+  }
+
+  static DateTime? _toDateTime(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+
+    return null;
+  }
+}
+
+class _TokenChartData {
+  final List<double> values;
+  final List<String> labels;
+  final String subtitle;
+
+  const _TokenChartData({
+    required this.values,
+    required this.labels,
+    required this.subtitle,
+  });
 }

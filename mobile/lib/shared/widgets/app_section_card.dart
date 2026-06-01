@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 // Widget global usado para exibir seções de conteúdo em formato de card.
 //
 // Centraliza o padrão visual de blocos como “Sobre”, “Documentos”,
@@ -6,19 +7,19 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
 class AppSectionCard extends StatelessWidget {
-  /// Título principal da seção.
+  // Título principal da seção.
   final String title;
 
-  /// Conteúdo que será exibido dentro do card.
+  // Conteúdo que será exibido dentro do card.
   final Widget child;
 
-  /// Subtítulo opcional para detalhamento da seção.
+  // Subtítulo opcional para detalhamento da seção.
   final String? subtitle;
 
-  /// Ícone opcional que pode ser exibido ao lado do título.
+  // Ícone opcional que pode ser exibido ao lado do título.
   final IconData? icon;
 
-  /// Padding interno customizado para o card.
+  // Padding interno customizado para o card.
   final EdgeInsetsGeometry? padding;
 
   const AppSectionCard({

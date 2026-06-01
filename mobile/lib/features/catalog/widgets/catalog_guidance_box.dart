@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 // Widget responsável por exibir mensagens de orientação na tela de catálogo.
 //
 // Isola a caixa informativa usada para explicar o catálogo e o balcão,

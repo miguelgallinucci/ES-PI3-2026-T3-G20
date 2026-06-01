@@ -8,17 +8,21 @@ import 'catalog_startup_card.dart'; // Para o StartupLogo
 import 'catalog_market_offer_card.dart'; // Para o MiniInfo
 
 class UserTokenPosition {
+  final String startupId;
   final String startup;
   final String sector;
   final int tokensOwned;
   final double currentPrice;
+  final double averagePrice;
   final String variation;
 
   const UserTokenPosition({
+    required this.startupId,
     required this.startup,
     required this.sector,
     required this.tokensOwned,
     required this.currentPrice,
+    required this.averagePrice,
     required this.variation,
   });
 }

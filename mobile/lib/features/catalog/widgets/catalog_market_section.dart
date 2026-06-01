@@ -11,11 +11,15 @@ class CatalogMarketSection extends StatelessWidget {
   final bool isBuySelected;
   final ValueChanged<bool> onModeChanged;
   final List<AvailableOffer> availableOffers;
+  final List<AvailableOffer> userOffers;
   final List<UserTokenPosition> userPositions;
+  final double availableBalance;
   final int totalTokensInWallet;
-  final double estimatedWalletValue;
+  final String buyOfferSort;
+  final ValueChanged<String> onBuyOfferSortChanged;
   final String Function(double value) formatCurrency;
   final Function(AvailableOffer offer) onBuyOffer;
+  final Function(AvailableOffer offer) onCancelOffer;
   final Function(UserTokenPosition position) onSellPosition;
 
   const CatalogMarketSection({
@@ -23,11 +27,15 @@ class CatalogMarketSection extends StatelessWidget {
     required this.isBuySelected,
     required this.onModeChanged,
     required this.availableOffers,
+    required this.userOffers,
     required this.userPositions,
+    required this.availableBalance,
     required this.totalTokensInWallet,
-    required this.estimatedWalletValue,
+    required this.buyOfferSort,
+    required this.onBuyOfferSortChanged,
     required this.formatCurrency,
     required this.onBuyOffer,
+    required this.onCancelOffer,
     required this.onSellPosition,
   });
 
@@ -65,15 +73,17 @@ class CatalogMarketSection extends StatelessWidget {
   }
 
   Widget _buildBuyMarketContent() {
+    final sortedOffers = _sortedBuyOffers();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: _MarketInfoCard(
                 label: 'Saldo',
-                value: 'R\$ 5.000,00',
+                value: formatCurrency(availableBalance),
               ),
             ),
             const SizedBox(width: 12),
@@ -95,8 +105,16 @@ class CatalogMarketSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 6),
+        Align(
+          alignment: Alignment.centerRight,
+          child: _SortMenu(
+            value: buyOfferSort,
+            onChanged: onBuyOfferSortChanged,
+          ),
+        ),
+        const SizedBox(height: 8),
         const Text(
-          'Escolha uma oferta para comprar tokens simulados de uma startup.',
+          'Escolha uma oferta para comprar tokens de uma startup.',
           style: TextStyle(
             color: AppColors.textSecondary,
             fontSize: 14,
@@ -104,18 +122,52 @@ class CatalogMarketSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        ...availableOffers.map(
-          (offer) => CatalogMarketOfferCard(
-            offer: offer,
-            formatCurrency: formatCurrency,
-            onBuy: () => onBuyOffer(offer),
+        if (sortedOffers.isEmpty)
+          const _MarketEmptyState(
+            icon: Icons.storefront_rounded,
+            title: 'Nenhuma oferta aberta',
+            description:
+                'Quando alguem publicar uma venda, ela aparecera aqui para todos.',
+          )
+        else
+          ...sortedOffers.map(
+            (offer) => CatalogMarketOfferCard(
+              offer: offer,
+              formatCurrency: formatCurrency,
+              onBuy: () => onBuyOffer(offer),
+            ),
           ),
-        ),
       ],
     );
   }
 
+  List<AvailableOffer> _sortedBuyOffers() {
+    final offers = [...availableOffers];
+
+    offers.sort((a, b) {
+      switch (buyOfferSort) {
+        case 'Mais recentes':
+          return b.createdAtMillis.compareTo(a.createdAtMillis);
+        case 'Maior quantidade':
+          return b.quantity.compareTo(a.quantity);
+        case 'Maior preco':
+          return b.unitPrice.compareTo(a.unitPrice);
+        case 'Menor preco':
+        default:
+          return a.unitPrice.compareTo(b.unitPrice);
+      }
+    });
+
+    return offers;
+  }
+
   Widget _buildSellMarketContent() {
+    final reservedTokens = userOffers.fold<int>(
+      0,
+      (sum, offer) => sum + offer.quantity,
+    );
+    final totalTokens = totalTokensInWallet + reservedTokens;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -123,19 +175,51 @@ class CatalogMarketSection extends StatelessWidget {
           children: [
             Expanded(
               child: _MarketInfoCard(
-                label: 'Tokens na carteira',
+                label: 'Disponiveis',
                 value: totalTokensInWallet.toString(),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _MarketInfoCard(
+                label: 'Reservados',
+                value: reservedTokens.toString(),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _MarketInfoCard(
-                label: 'Valor estimado',
-                value: formatCurrency(estimatedWalletValue),
+                label: 'Total',
+                value: totalTokens.toString(),
               ),
             ),
           ],
         ),
+        const SizedBox(height: 22),
+        const Text(
+          'Suas ofertas',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (userOffers.isEmpty)
+          const _MarketEmptyState(
+            icon: Icons.sell_outlined,
+            title: 'Nenhuma oferta aberta',
+            description:
+                'As ofertas de venda que voce publicar aparecerao aqui.',
+          )
+        else
+          ...userOffers.map(
+            (offer) => _UserOfferCard(
+              offer: offer,
+              formatCurrency: formatCurrency,
+              onCancel: () => onCancelOffer(offer),
+            ),
+          ),
         const SizedBox(height: 22),
         const Text(
           'Meus tokens',
@@ -155,14 +239,258 @@ class CatalogMarketSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        ...userPositions.map(
-          (position) => CatalogUserPositionCard(
-            position: position,
-            formatCurrency: formatCurrency,
-            onSell: () => onSellPosition(position),
+        if (userPositions.isEmpty)
+          const _MarketEmptyState(
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'Nenhum token na carteira',
+            description:
+                'Compre tokens de uma startup para criar ofertas de venda.',
+          )
+        else
+          ...userPositions.map(
+            (position) => CatalogUserPositionCard(
+              position: position,
+              formatCurrency: formatCurrency,
+              onSell: () => onSellPosition(position),
+            ),
           ),
-        ),
       ],
+    );
+  }
+}
+
+class _UserOfferCard extends StatelessWidget {
+  final AvailableOffer offer;
+  final String Function(double value) formatCurrency;
+  final VoidCallback onCancel;
+
+  const _UserOfferCard({
+    required this.offer,
+    required this.formatCurrency,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = offer.quantity * offer.unitPrice;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.30),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.sell_rounded,
+                  color: AppColors.primaryLight,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      offer.startup,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    const Text(
+                      'Oferta aberta',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: MiniInfo(
+                  label: 'Quantidade',
+                  value: '${offer.quantity} tokens',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: MiniInfo(
+                  label: 'Preco/token',
+                  value: formatCurrency(offer.unitPrice),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: MiniInfo(
+                  label: 'Total',
+                  value: formatCurrency(total),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: OutlinedButton.icon(
+              onPressed: onCancel,
+              icon: const Icon(Icons.close_rounded, size: 20),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryLight,
+                side: BorderSide(
+                  color: AppColors.primary.withValues(alpha: 0.55),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              label: const Text(
+                'Cancelar oferta',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SortMenu extends StatelessWidget {
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  const _SortMenu({
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const options = [
+      'Menor preco',
+      'Maior preco',
+      'Mais recentes',
+      'Maior quantidade',
+    ];
+
+    return PopupMenuButton<String>(
+      initialValue: value,
+      onSelected: onChanged,
+      color: const Color(0xFF102235),
+      itemBuilder: (context) {
+        return options.map((option) {
+          return PopupMenuItem<String>(
+            value: option,
+            child: Text(
+              option,
+              style: const TextStyle(color: Colors.white),
+            ),
+          );
+        }).toList();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.sort_rounded,
+              color: AppColors.primaryLight,
+              size: 18,
+            ),
+            const SizedBox(width: 7),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MarketEmptyState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+
+  const _MarketEmptyState({
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: AppColors.primary, size: 34),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

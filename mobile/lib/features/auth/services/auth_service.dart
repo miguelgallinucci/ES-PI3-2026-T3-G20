@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,6 +17,9 @@ class AuthService {
     return _auth.authStateChanges();
   }
 
+  // Realiza login do usuário via Firebase Auth.
+  // Retorna UserCredential em caso de sucesso ou lança FirebaseAuthException
+  // que deve ser tratada e convertida na UI.
   Future<UserCredential> login({
     required String email,
     required String password,
@@ -28,45 +32,79 @@ class AuthService {
     );
   }
 
+  // Fluxo de criação de conta orquestrado entre Auth e Cloud Functions:
+  // 1. Cria usuário no Firebase Auth.
+  // 2. Obtém idToken atualizado (necessário como fallback para a Cloud Function).
+  // 3. Chama a função `createUserProfile` via httpsCallable para criar o documento do usuário.
+  // 4. Executa rollback (delete) no Auth caso a Cloud Function falhe, garantindo consistência.
   Future<UserCredential> register({
     required String fullName,
     required String email,
     required String cpf,
     required String phone,
     required String password,
+    bool mfaEnabled = false,
   }) async {
     final cleanEmail = email.trim();
     final cleanFullName = fullName.trim();
     final cleanCpf = cpf.trim();
     final cleanPhone = phone.trim();
 
+    // desenvolvido por Miguel Gallinucci - CPF duplicado agora e validado no backend para evitar leitura aberta de users.
+
+    // 1. Cria o usuário no Firebase Auth
     final credential = await _auth.createUserWithEmailAndPassword(
       email: cleanEmail,
       password: password,
     );
 
+    final user = credential.user;
+    if (user == null) {
+      throw Exception('Usuário nulo após createUserWithEmailAndPassword');
+    }
+
+    // 2. Obtém idToken fresco para enviar ao backend como fallback de autenticação.
+    //    O context.auth do callable pode chegar vazio logo após o registro,
+    //    então enviamos o token explicitamente no payload.
+    final idToken = await user.getIdToken(true);
+    debugPrint('idToken obtido com sucesso (${idToken?.length ?? 0} chars)');
+
+    // 3. Chama a Cloud Function createUserProfile para criar users/{uid}
     try {
       final callable = _functions.httpsCallable('createUserProfile');
+
+      // desenvolvido por Miguel Gallinucci - envia a escolha do 2FA junto com os dados do cadastro.
       await callable.call({
         'fullName': cleanFullName,
         'cpf': cleanCpf,
         'phone': cleanPhone,
+        'mfaEnabled': mfaEnabled,
+        'idToken': idToken,
       });
+      debugPrint('Perfil criado via Cloud Function para uid=${user.uid}');
     } catch (e) {
       debugPrint('Erro ao criar perfil no backend: $e');
+      try {
+        await user.delete();
+        debugPrint('Usuario removido do Auth apos falha ao criar perfil.');
+      } catch (deleteError) {
+        debugPrint('Erro ao remover usuario sem perfil: $deleteError');
+      }
+      // Propaga o erro para a UI informar o usuário.
+      // O cadastro no Auth já foi feito, mas sem perfil no Firestore
+      // o app não funcionará corretamente.
+      rethrow;
     }
 
     return credential;
   }
 
-  Future<void> sendPasswordResetEmail({
-    required String email,
-  }) async {
+  // Solicita o envio de e-mail de redefinição de senha.
+  // Utiliza a integração nativa do Firebase Auth, sem necessidade de backend customizado.
+  Future<void> sendPasswordResetEmail({required String email}) async {
     final cleanEmail = email.trim();
 
-    await _auth.sendPasswordResetEmail(
-      email: cleanEmail,
-    );
+    await _auth.sendPasswordResetEmail(email: cleanEmail);
   }
 
   Future<Map<String, dynamic>?> getCurrentUserData() async {
@@ -93,13 +131,37 @@ class AuthService {
       return;
     }
 
-    await _firestore.collection('users').doc(user.uid).set(
-      {
-        'mfaEnabled': enabled,
-        'mfaUpdatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+    await _firestore.collection('users').doc(user.uid).set({
+      'mfaEnabled': enabled,
+      'mfaUpdatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> sendEmailMfaCode({required String email}) async {
+    final cleanEmail = email.trim();
+
+    final callable = _functions.httpsCallable('sendEmailMfaCode');
+
+    await callable.call({'email': cleanEmail});
+  }
+
+  Future<bool> verifyEmailMfaCode({
+    required String email,
+    required String code,
+  }) async {
+    final cleanEmail = email.trim();
+    final cleanCode = code.trim();
+
+    final callable = _functions.httpsCallable('verifyEmailMfaCode');
+
+    final result = await callable.call({
+      'email': cleanEmail,
+      'code': cleanCode,
+    });
+
+    final data = Map<String, dynamic>.from(result.data as Map);
+
+    return data['valid'] == true;
   }
 
   Future<void> logout() async {

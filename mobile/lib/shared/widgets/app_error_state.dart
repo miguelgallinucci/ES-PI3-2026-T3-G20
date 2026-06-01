@@ -1,19 +1,20 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
-/// Widget global para exibir estados de erro padronizados em todo o aplicativo.
-/// Oferece suporte a ícone customizado, título, mensagem e ação de repetição.
+// Widget global para exibir estados de erro padronizados em todo o aplicativo.
+// Oferece suporte a ícone customizado, título, mensagem e ação de repetição.
 class AppErrorState extends StatelessWidget {
-  /// A mensagem principal do erro que será exibida ao usuário.
+  // A mensagem principal do erro que será exibida ao usuário.
   final String message;
 
-  /// Título opcional para o erro (ex: "Ops! Algo deu errado").
+  // Título opcional para o erro (ex: "Ops! Algo deu errado").
   final String? title;
 
-  /// Ícone opcional para representar o erro. Se nulo, usa Icons.error_outline.
+  // Ícone opcional para representar o erro. Se nulo, usa Icons.error_outline.
   final IconData? icon;
 
-  /// Callback opcional para permitir que o usuário tente carregar os dados novamente.
+  // Callback opcional para permitir que o usuário tente carregar os dados novamente.
   final VoidCallback? onRetry;
 
   const AppErrorState({

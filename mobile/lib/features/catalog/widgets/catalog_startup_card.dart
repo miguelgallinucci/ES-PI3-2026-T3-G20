@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 // Widget responsável por exibir uma startup dentro da lista do catálogo.
 //
 // Isola o card visual usado na CatalogPage, mantendo a página principal

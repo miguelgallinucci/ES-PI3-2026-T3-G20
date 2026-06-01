@@ -1,25 +1,61 @@
+// Alycia Santos Bond - RA 25016465
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { db } from '../../shared/firebase';
 
 /**
- * Creates or updates the user profile in Firestore.
- * This is a callable function that ensures sensitive fields like 'role'
- * are controlled by the backend.
+ * Cria ou atualiza o perfil do usuário no Firestore.
+ * Essa é uma callable function que garante que campos sensíveis como 'role'
+ * sejam controlados exclusivamente pelo backend.
+ *
+ * Suporta dois modos de autenticação:
+ * 1. context.auth (autenticação automática do Firebase Callable)
+ * 2. data.idToken (token explícito enviado pelo client como fallback)
+ *
+ * O fallback existe porque context.auth pode chegar vazio quando a
+ * callable é invocada logo após createUserWithEmailAndPassword,
+ * antes do SDK propagar o estado de autenticação.
  */
 export const createUserProfile = functions.https.onCall(async (data, context) => {
-  // 1. Validate authentication
-  if (!context.auth) {
+  const hasContextAuth = !!(context && context.auth);
+  const hasIdToken = !!(data && data.idToken);
+
+  // Resolução de uid e email
+  let uid: string;
+  let email: string;
+
+  if (hasContextAuth) {
+    // Caminho principal: o SDK do Firebase populou context.auth
+    uid = context.auth!.uid;
+    email = context.auth!.token.email || '';
+  } else if (hasIdToken) {
+    // Fallback: o client enviou um idToken explícito no payload
+    try {
+      const decodedToken = await admin.auth().verifyIdToken(data.idToken);
+      uid = decodedToken.uid;
+      email = decodedToken.email || '';
+    } catch (tokenError: any) {
+      console.error('Falha ao verificar idToken:', tokenError?.code, tokenError?.message);
+      throw new functions.https.HttpsError(
+        'unauthenticated',
+        'Token de autenticação inválido ou expirado.'
+      );
+    }
+  } else {
+    // Sem nenhum tipo de autenticação
+    console.error('createUserProfile chamado sem autenticação');
     throw new functions.https.HttpsError(
       'unauthenticated',
       'O usuário deve estar autenticado para criar um perfil.'
     );
   }
 
-  const uid = context.auth.uid;
-  const email = context.auth.token.email || "";
+  console.log(`createUserProfile — uid=${uid}`);
 
-  // 2. Extract and validate input data
+  // Validação dos dados de entrada
   const { fullName, cpf, phone } = data;
+  /// desenvolvido por Miguel Gallinucci - recebe do app se o usuario quer iniciar com 2FA ativo.
+  const mfaEnabled = data.mfaEnabled === true;
 
   if (!fullName || typeof fullName !== 'string' || fullName.trim() === '') {
     throw new functions.https.HttpsError(
@@ -35,6 +71,17 @@ export const createUserProfile = functions.https.onCall(async (data, context) =>
     );
   }
 
+  /// desenvolvido por Miguel Gallinucci - normaliza o CPF recebido antes de salvar.
+  const cleanCpf = cpf.trim();
+  const normalizedCpf = cleanCpf.replace(/\D/g, '');
+
+  if (normalizedCpf === '') {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'O CPF informado Ã© invÃ¡lido.'
+    );
+  }
+
   if (!phone || typeof phone !== 'string' || phone.trim() === '') {
     throw new functions.https.HttpsError(
       'invalid-argument',
@@ -42,35 +89,70 @@ export const createUserProfile = functions.https.onCall(async (data, context) =>
     );
   }
 
+  // Criação / Atualização do documento no Firestore
   try {
-    const userRef = admin.firestore().collection('users').doc(uid);
+    const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
+    /// desenvolvido por Miguel Gallinucci - consulta CPFs existentes para impedir cadastro duplicado.
+    const cpfValues = Array.from(new Set([cleanCpf, normalizedCpf]));
+    const [normalizedCpfSnapshot, cpfSnapshot] = await Promise.all([
+      db.collection('users')
+        .where('cpfNormalized', '==', normalizedCpf)
+        .limit(10)
+        .get(),
+      db.collection('users')
+        .where('cpf', 'in', cpfValues)
+        .limit(10)
+        .get(),
+    ]);
+
+    const cpfAlreadyUsed = [
+      ...normalizedCpfSnapshot.docs,
+      ...cpfSnapshot.docs,
+    ].some((doc) => doc.id !== uid);
+
+    if (cpfAlreadyUsed) {
+      throw new functions.https.HttpsError(
+        'already-exists',
+        'JÃ¡ existe uma conta cadastrada com este CPF.'
+      );
+    }
 
     if (!userDoc.exists) {
-      // Create new profile
+      // Cria um novo perfil
       await userRef.set({
         fullName: fullName.trim(),
         email: email,
-        cpf: cpf.trim(),
+        cpf: cleanCpf,
+        cpfNormalized: normalizedCpf,
         phone: phone.trim(),
-        role: "investidor",
-        mfaEnabled: false,
+        role: 'investidor',
+        mfaEnabled,
         saldoFicticio: 0,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
+      console.log(`Perfil CRIADO no Firestore para uid=${uid}`);
     } else {
-      // Update existing profile (preserving sensitive fields)
+      // Atualiza perfil existente (preserva campos sensíveis)
       await userRef.update({
         fullName: fullName.trim(),
         email: email,
-        cpf: cpf.trim(),
+        cpf: cleanCpf,
+        cpfNormalized: normalizedCpf,
         phone: phone.trim(),
+        mfaEnabled,
       });
+      console.log(`Perfil ATUALIZADO no Firestore para uid=${uid}`);
     }
 
+    console.log('createUserProfile concluído com sucesso');
     return { success: true, message: 'Perfil do usuário processado com sucesso.' };
-  } catch (error) {
-    console.error('Error creating user profile:', error);
+  } catch (error: any) {
+    if (error instanceof functions.https.HttpsError) {
+      throw error;
+    }
+
+    console.error('Erro ao criar/atualizar perfil do usuário:', error?.message || error);
     throw new functions.https.HttpsError(
       'internal',
       'Erro ao processar o perfil do usuário no servidor.'

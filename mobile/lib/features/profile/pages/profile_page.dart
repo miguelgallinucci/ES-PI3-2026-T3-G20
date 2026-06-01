@@ -174,7 +174,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         _ActionCard(
                           icon: Icons.bar_chart_rounded,
-                          title: 'Meus Investimentos',
+                          title: 'Meus investimentos',
                           subtitle:
                           'Acompanhe desempenho, métricas e valorização.',
                           onTap: () {

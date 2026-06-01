@@ -1,13 +1,14 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
-/// Widget global que define o fundo padrão com gradiente do aplicativo MesclaInvest.
-/// Centraliza a identidade visual e evita repetição de código de gradiente nas páginas.
+// Widget global que define o fundo padrão com gradiente do aplicativo MesclaInvest.
+// Centraliza a identidade visual e evita repetição de código de gradiente nas páginas.
 class AppBackground extends StatelessWidget {
-  /// O conteúdo que será exibido sobre o fundo.
+  // O conteúdo que será exibido sobre o fundo.
   final Widget child;
 
-  /// Padding opcional para o conteúdo interno.
+  // Padding opcional para o conteúdo interno.
   final EdgeInsetsGeometry? padding;
 
   const AppBackground({

@@ -7,20 +7,28 @@ import '../../../core/theme/app_colors.dart';
 import 'catalog_startup_card.dart'; // Para o StartupLogo
 
 class AvailableOffer {
+  final String id;
+  final String startupId;
+  final String sellerId;
   final String startup;
   final String sector;
   final String stage;
   final int quantity;
   final double unitPrice;
   final String variation;
+  final int createdAtMillis;
 
   const AvailableOffer({
+    required this.id,
+    required this.startupId,
+    required this.sellerId,
     required this.startup,
     required this.sector,
     required this.stage,
     required this.quantity,
     required this.unitPrice,
     required this.variation,
+    this.createdAtMillis = 0,
   });
 }
 

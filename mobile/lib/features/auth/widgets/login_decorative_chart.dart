@@ -1,3 +1,4 @@
+// Alycia Santos Bond - RA 25016465
 // Widget responsável por exibir o gráfico decorativo da tela de login.
 //
 // Isola o desenho visual usado na autenticação, mantendo a LoginPage
@@ -22,8 +23,8 @@ class LoginDecorativeChart extends StatelessWidget {
   }
 }
 
-/// Painter personalizado que desenha um gráfico decorativo com linhas azuis e gradiente rosa.
-/// Usado como elemento visual na seção superior da página de login.
+// Painter personalizado que desenha um gráfico decorativo com linhas azuis e gradiente rosa.
+// Usado como elemento visual na seção superior da página de login.
 class _LoginDecorativeChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {

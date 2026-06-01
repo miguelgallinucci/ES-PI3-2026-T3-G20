@@ -1,10 +1,11 @@
+// Alycia Santos Bond - RA 25016465
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 
-/// Widget global para exibir estados de carregamento padronizados.
-/// Centraliza o CircularProgressIndicator e permite exibir uma mensagem opcional.
+// Widget global para exibir estados de carregamento padronizados.
+// Centraliza o CircularProgressIndicator e permite exibir uma mensagem opcional.
 class AppLoading extends StatelessWidget {
-  /// Mensagem opcional para ser exibida abaixo do indicador de progresso.
+  // Mensagem opcional para ser exibida abaixo do indicador de progresso.
   final String? message;
 
   const AppLoading({
