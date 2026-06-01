@@ -39,6 +39,7 @@ dependencies:
   firebase_auth: ^6.4.0
   cloud_functions: ^6.2.0
   url_launcher: ^6.3.1
+  video_player: ^2.10.0
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +62,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/videos/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

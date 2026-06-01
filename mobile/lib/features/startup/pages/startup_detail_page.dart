@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import '../../../core/theme/app_colors.dart';
 import '../services/startup_questions_service.dart';
 import '../models/startup_model.dart';
@@ -693,47 +694,8 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
                     AppSectionCard(
                       title: 'Vídeo demonstrativo',
                       subtitle: 'Pitch ou demonstração do produto',
-                      child: Container(
-                        height: 170,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.03),
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.play_circle_fill_rounded,
-                                color: AppColors.primaryLight,
-                                size: 52,
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                widget.startup.demoVideoUrl.trim().isNotEmpty
-                                    ? 'Vídeo demonstrativo disponível'
-                                    : 'Área reservada para vídeo',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.startup.demoVideoUrl.trim().isNotEmpty
-                                    ? widget.startup.demoVideoUrl
-                                    : 'Demonstração ou pitch da startup',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      child: StartupDemoVideo(
+                        videoUrl: widget.startup.demoVideoUrl,
                       ),
                     ),
                     const SizedBox(height: 96),
@@ -742,6 +704,499 @@ class _StartupDetailPageState extends State<StartupDetailPage> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class StartupDemoVideo extends StatefulWidget {
+  final String videoUrl;
+
+  const StartupDemoVideo({
+    super.key,
+    required this.videoUrl,
+  });
+
+  @override
+  State<StartupDemoVideo> createState() => _StartupDemoVideoState();
+}
+
+class _StartupDemoVideoState extends State<StartupDemoVideo> {
+  VideoPlayerController? _controller;
+  Future<void>? _initializeVideo;
+  double _volume = 1;
+
+  bool get _hasVideo => widget.videoUrl.trim().isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupVideo();
+  }
+
+  @override
+  void didUpdateWidget(covariant StartupDemoVideo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.videoUrl != widget.videoUrl) {
+      _controller?.dispose();
+      _setupVideo();
+    }
+  }
+
+  void _setupVideo() {
+    final String source = widget.videoUrl.trim();
+
+    if (source.isEmpty) {
+      _controller = null;
+      _initializeVideo = null;
+      return;
+    }
+
+    final bool isAsset = source.startsWith('assets/');
+    _controller = isAsset
+        ? VideoPlayerController.asset(source)
+        : VideoPlayerController.networkUrl(Uri.parse(source));
+    _initializeVideo = _controller!.initialize().then((_) {
+      _controller!
+        ..setLooping(false)
+        ..setVolume(_volume);
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  void _togglePlayback() {
+    final VideoPlayerController? controller = _controller;
+
+    if (controller == null || !controller.value.isInitialized) return;
+
+    setState(() {
+      controller.value.isPlaying ? controller.pause() : controller.play();
+    });
+  }
+
+  void _seekRelative(Duration offset) {
+    final VideoPlayerController? controller = _controller;
+
+    if (controller == null || !controller.value.isInitialized) return;
+
+    final Duration duration = controller.value.duration;
+    final Duration current = controller.value.position;
+    final int targetMs = (current + offset).inMilliseconds.clamp(
+          0,
+          duration.inMilliseconds,
+        );
+
+    controller.seekTo(Duration(milliseconds: targetMs));
+  }
+
+  void _seekToProgress(double progress) {
+    final VideoPlayerController? controller = _controller;
+
+    if (controller == null || !controller.value.isInitialized) return;
+
+    final Duration duration = controller.value.duration;
+    controller.seekTo(
+      Duration(
+        milliseconds: (duration.inMilliseconds * progress).round(),
+      ),
+    );
+  }
+
+  void _setVolume(double volume) {
+    final VideoPlayerController? controller = _controller;
+
+    setState(() {
+      _volume = volume.clamp(0, 1);
+      controller?.setVolume(_volume);
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+
+    final int minutes = duration.inMinutes.remainder(60);
+    final int seconds = duration.inSeconds.remainder(60);
+
+    if (duration.inHours > 0) {
+      return '${duration.inHours}:${twoDigits(minutes)}:${twoDigits(seconds)}';
+    }
+
+    return '$minutes:${twoDigits(seconds)}';
+  }
+
+  Future<void> _openExpandedPlayer() async {
+    final VideoPlayerController? controller = _controller;
+
+    if (controller == null || !controller.value.isInitialized) return;
+
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.82),
+      builder: (context) {
+        return Dialog(
+          insetPadding: const EdgeInsets.all(18),
+          backgroundColor: AppColors.background,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Video demonstrativo',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Fechar',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildVideoPlayer(controller, expanded: true),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Widget _buildVideoPlayer(
+    VideoPlayerController controller, {
+    required bool expanded,
+  }) {
+    return _VideoFrame(
+      height: expanded ? 430 : 260,
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, _) {
+          final VideoPlayerValue value = controller.value;
+          final Duration duration = value.duration;
+          final Duration position = value.position;
+          final double progress = duration.inMilliseconds == 0
+              ? 0
+              : (position.inMilliseconds / duration.inMilliseconds).clamp(0, 1);
+
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: _togglePlayback,
+                  child: ColoredBox(
+                    color: Colors.black,
+                    child: Center(
+                      child: AspectRatio(
+                        aspectRatio: value.aspectRatio,
+                        child: VideoPlayer(controller),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton.filledTonal(
+                  tooltip: expanded ? 'Janela aberta' : 'Abrir em janela',
+                  onPressed: expanded ? null : _openExpandedPlayer,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black.withValues(alpha: 0.45),
+                    disabledBackgroundColor:
+                        Colors.black.withValues(alpha: 0.25),
+                  ),
+                  icon: const Icon(
+                    Icons.open_in_full_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
+              if (!value.isPlaying)
+                Center(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(999),
+                    onTap: _togglePlayback,
+                    child: Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.55),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.primaryLight),
+                      ),
+                      child: const Icon(
+                        Icons.play_arrow_rounded,
+                        color: AppColors.primaryLight,
+                        size: 44,
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                left: 10,
+                right: 10,
+                bottom: 10,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.58),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            _formatDuration(position),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Expanded(
+                            child: SliderTheme(
+                              data: SliderTheme.of(context).copyWith(
+                                trackHeight: 3,
+                                thumbShape: const RoundSliderThumbShape(
+                                  enabledThumbRadius: 6,
+                                ),
+                              ),
+                              child: Slider(
+                                value: progress.toDouble(),
+                                min: 0,
+                                max: 1,
+                                activeColor: AppColors.primaryLight,
+                                inactiveColor:
+                                    Colors.white.withValues(alpha: 0.2),
+                                onChanged: _seekToProgress,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            _formatDuration(duration),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          _VideoIconButton(
+                            tooltip: 'Voltar 10 segundos',
+                            icon: Icons.replay_10_rounded,
+                            onPressed: () =>
+                                _seekRelative(const Duration(seconds: -10)),
+                          ),
+                          _VideoIconButton(
+                            tooltip: value.isPlaying ? 'Pausar' : 'Reproduzir',
+                            icon: value.isPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            onPressed: _togglePlayback,
+                          ),
+                          _VideoIconButton(
+                            tooltip: 'Avancar 10 segundos',
+                            icon: Icons.forward_10_rounded,
+                            onPressed: () =>
+                                _seekRelative(const Duration(seconds: 10)),
+                          ),
+                          const Spacer(),
+                          _VideoIconButton(
+                            tooltip: _volume == 0 ? 'Ativar som' : 'Mutar',
+                            icon: _volume == 0
+                                ? Icons.volume_off_rounded
+                                : Icons.volume_up_rounded,
+                            onPressed: () => _setVolume(_volume == 0 ? 1 : 0),
+                          ),
+                          SizedBox(
+                            width: expanded ? 120 : 82,
+                            child: Slider(
+                              value: _volume,
+                              min: 0,
+                              max: 1,
+                              activeColor: AppColors.primaryLight,
+                              inactiveColor:
+                                  Colors.white.withValues(alpha: 0.2),
+                              onChanged: _setVolume,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_hasVideo) {
+      return const _VideoPlaceholder();
+    }
+
+    return FutureBuilder<void>(
+      future: _initializeVideo,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _VideoFrame(
+            child: Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primaryLight,
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError || _controller == null) {
+          return const _VideoPlaceholder(
+            title: 'Nao foi possivel carregar o video',
+            subtitle: 'Verifique o arquivo ou URL cadastrado.',
+          );
+        }
+
+        final VideoPlayerController controller = _controller!;
+
+        return _buildVideoPlayer(controller, expanded: false);
+      },
+    );
+  }
+}
+
+class _VideoFrame extends StatelessWidget {
+  final Widget child;
+  final double height;
+
+  const _VideoFrame({
+    required this.child,
+    this.height = 190,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        height: height,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _VideoIconButton extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  const _VideoIconButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: tooltip,
+      visualDensity: VisualDensity.compact,
+      onPressed: onPressed,
+      icon: Icon(
+        icon,
+        color: Colors.white,
+        size: 24,
+      ),
+    );
+  }
+}
+
+class _VideoPlaceholder extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _VideoPlaceholder({
+    this.title = 'Area reservada para video',
+    this.subtitle = 'Demonstracao ou pitch da startup',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _VideoFrame(
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.play_circle_fill_rounded,
+              color: AppColors.primaryLight,
+              size: 52,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+          ],
         ),
       ),
     );
